@@ -263,6 +263,13 @@ FRED_SERIES: tuple[SeriesSpec, ...] = (
         publication_lag_days=1,
         units="procentpunt",
         transform_hint="eerste verschil of log-niveau",
+        # LET OP: FRED levert via de observations-endpoint maar circa drie jaar
+        # historie voor deze reeks (vanaf ~2023), terwijl de andere drivers tot
+        # 2003 teruggaan. Een regressor die pas in 2023 begint, kort het hele
+        # model in tot dat venster. Daarom optioneel: bruikbaar voor een
+        # deelperiode-analyse, niet voor het basismodel. De VIX vervult de rol
+        # van stressindicator over de volledige periode.
+        optional=True,
     ),
     SeriesSpec(
         code="WALCL",

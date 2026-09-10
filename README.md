@@ -121,24 +121,33 @@ tijdelijke cachemap.
 ```
 ├── src/goldmodel/
 │   ├── config.py              # reeksdefinities + economische motivatie
-│   └── data/
-│       ├── cache.py           # Parquet-cache met TTL en stale-fallback
-│       ├── fred_client.py     # FRED + ALFRED (vintage)
-│       ├── yahoo_client.py    # yfinance met normalisatie
-│       └── loader.py          # orkestratie, paneelopbouw
+│   ├── data/
+│   │   ├── cache.py           # Parquet-cache met TTL en stale-fallback
+│   │   ├── fred_client.py     # FRED + ALFRED (vintage)
+│   │   ├── yahoo_client.py    # yfinance met normalisatie
+│   │   └── loader.py          # orkestratie, paneelopbouw
+│   └── viz/
+│       ├── style.py           # gedeelde opmaak en kleuren
+│       └── distributions.py   # figuren over de verdeling
 ├── scripts/
 │   ├── check_setup.py         # controleert installatie en sleutels
-│   └── fetch_data.py          # haalt op en toont basisstatistieken
-├── tests/test_data_layer.py
+│   ├── fetch_data.py          # haalt op en toont basisstatistieken
+│   └── plot_distributions.py  # maakt de zes figuren
+├── tests/
+│   ├── test_data_layer.py
+│   └── test_viz.py
 ├── docs/
 │   ├── uitleg_datalaag.md     # hoe de code werkt, stap voor stap
+│   ├── begrippen.md           # elk statistisch begrip uitgelegd + links
 │   └── vintage_data.md        # revisies en look-ahead bias
+├── output/figures/            # gitignored
 └── data/cache/                # gitignored
 ```
 
 Nieuw in dit project? Begin bij
 [docs/uitleg_datalaag.md](docs/uitleg_datalaag.md) — dat loopt de code door
-zonder theorie.
+zonder theorie. Voor de statistische begrippen: [docs/begrippen.md](docs/begrippen.md),
+met een uitleg en een link per term.
 
 ---
 
@@ -236,6 +245,41 @@ normaal verdeelde schokken **onderschat het staartrisico systematisch**, en
 dat is precies het risico waar een margeberekening over gaat. De keuze voor
 t-verdeelde schokken en GARCH in fase 4 is daarmee onderbouwd met data uit dit
 project, in plaats van overgenomen als recept.
+
+### De figuren
+
+```powershell
+python scripts/plot_distributions.py
+```
+
+Zes figuren in `output/figures/`, elk met een uitleg in de terminal:
+
+| # | Figuur | Wat het laat zien |
+|---|---|---|
+| 1 | Verdeling tegenover normaal | Hogere piek, dikkere staarten, tekort in het middengebied |
+| 2 | Kurtosis uitgelegd | Waarom de vierde macht; **1% van de dagen levert 73% van de kurtosis** |
+| 3 | Scheefheid | Dalingen over stijgingen geklapt; de tien extreemste dagen |
+| 4 | QQ-plot | De klassieke S-curve tegen normaal, bijna recht tegen t |
+| 5 | Volatiliteitsclustering | Richting onvoorspelbaar, grootte wél — de basis voor GARCH |
+| 6 | Reeksen vergeleken | Dikke staarten zijn niet uniek voor goud |
+
+Drie dingen die uit de figuren kwamen en niet uit de tabel:
+
+**De t-verdeling past met 3,6 vrijheidsgraden.** Dat is laag — de staarten zijn
+fors dikker dan normaal. In de QQ-plot ligt de data er zichtbaar beter op dan
+op de normale lijn. Dat is de empirische onderbouwing voor de schokverdeling
+in fase 4.
+
+**Kurtosis is extreem geconcentreerd.** 1% van de handelsdagen bepaalt 73% van
+het getal, 5% bepaalt 90%. Dat maakt kurtosis een instabiele schatting: haal
+je vijf dagen weg, dan verandert het getal fors. Het is een reden om er niet
+te veel gewicht aan te geven en de QQ-plot als hoofdbewijs te gebruiken.
+
+**Volatiliteit clustert, en dat is een apart verschijnsel.** De autocorrelatie
+van de rendementen zelf blijft binnen de toevalsgrenzen — de richting is
+onvoorspelbaar, zoals de efficiënte-markthypothese voorspelt. Maar de
+autocorrelatie van de *absolute* rendementen is duidelijk positief en houdt
+weken aan. Dat contrast is precies wat GARCH modelleert.
 
 ---
 
