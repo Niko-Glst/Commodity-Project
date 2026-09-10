@@ -82,6 +82,16 @@ FRED_API_KEY=jouw_sleutel_hier
 
 `.env` staat in `.gitignore` en mag nooit gecommit worden.
 
+### Controleer de installatie
+
+```powershell
+python scripts/check_setup.py
+```
+
+Dit controleert de Python-versie, de pakketten, je API-sleutel, beide
+verbindingen en de cache — en zegt per onderdeel wat je moet doen als er iets
+mis is.
+
 ### Data ophalen
 
 ```powershell
@@ -116,11 +126,19 @@ tijdelijke cachemap.
 │       ├── fred_client.py     # FRED + ALFRED (vintage)
 │       ├── yahoo_client.py    # yfinance met normalisatie
 │       └── loader.py          # orkestratie, paneelopbouw
-├── scripts/fetch_data.py      # controlescript fase 1
+├── scripts/
+│   ├── check_setup.py         # controleert installatie en sleutels
+│   └── fetch_data.py          # haalt op en toont basisstatistieken
 ├── tests/test_data_layer.py
-├── docs/vintage_data.md       # revisies en look-ahead bias
+├── docs/
+│   ├── uitleg_datalaag.md     # hoe de code werkt, stap voor stap
+│   └── vintage_data.md        # revisies en look-ahead bias
 └── data/cache/                # gitignored
 ```
+
+Nieuw in dit project? Begin bij
+[docs/uitleg_datalaag.md](docs/uitleg_datalaag.md) — dat loopt de code door
+zonder theorie.
 
 ---
 
