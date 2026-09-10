@@ -1,0 +1,29 @@
+# Kernafhankelijkheden voor de datalaag (fase 1).
+# Versies zijn ondergrenzen: de API's die we gebruiken zijn stabiel sinds deze releases.
+
+# --- Data en opslag ---
+pandas>=2.2                # tijdreeksen, resampling, join op datum
+numpy>=1.26                # numerieke basis onder pandas
+pyarrow>=15.0              # Parquet-engine (lezen/schrijven van de cache)
+
+# --- Databronnen ---
+fredapi>=0.5.2             # dunne wrapper om de FRED/ALFRED REST-API
+yfinance>=0.2.40           # Yahoo Finance: futures, indices, aandelen
+requests>=2.31             # directe ALFRED-calls waar fredapi tekortschiet
+
+# --- Configuratie ---
+python-dotenv>=1.0         # inlezen van .env (FRED_API_KEY)
+
+# --- Statistiek en econometrie (fase 2 en 3, alvast vastgelegd) ---
+statsmodels>=0.14          # ADF/KPSS, OLS met Newey-West, VAR, ACF/PACF
+scipy>=1.12                # verdelingen, Jarque-Bera, t-verdeling
+scikit-learn>=1.4          # ridge/lasso, walk-forward splits
+
+# --- Simulatie (fase 4) ---
+arch>=6.3                  # GARCH-modellen en volatiliteitsvoorspelling
+
+# --- Visualisatie ---
+matplotlib>=3.8            # ACF-plots, PIT-histogrammen, fan charts
+
+# --- Ontwikkeling ---
+pytest>=8.0                # tests voor de datalaag en later de validatielaag
