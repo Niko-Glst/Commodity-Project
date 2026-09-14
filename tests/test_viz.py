@@ -163,3 +163,89 @@ def test_categorical_colors_are_distinct() -> None:
     maakt ze onleesbaar.
     """
     assert len(set(COLORS.values())) == len(COLORS)
+
+
+# -- momentopnamen en vergelijking ----------------------------------------
+
+
+def test_snapshot_roundtrip(tmp_path, monkeypatch) -> None:
+    """Een momentopname laat zich opslaan en terugleggen zonder verlies."""
+    import json
+
+    sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+    import compare_runs
+
+    monkeypatch.setattr(compare_runs, "SNAPSHOT_DIR", tmp_path)
+
+    payload = {
+        "captured_at": "2026-01-01T00:00:00+00:00",
+        "panel_rows": 100,
+        "panel_columns": 4,
+        "panel_last_date": "2026-01-01",
+        "series": {},
+    }
+    path = compare_runs.snapshot_path("test")
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    assert json.loads(path.read_text(encoding="utf-8")) == payload
+
+
+def test_snapshot_statistics_match_manual_computation() -> None:
+    """compute_snapshot berekent dezelfde getallen als een directe berekening.
+
+    Dit vangt de fout af die bij het bouwen van dit script optrad: een
+    momentopname die stilzwijgend andere data beschrijft dan je denkt. De
+    test controleert dat de grootheden bij de opgegeven data horen.
+    """
+    sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+    from compare_runs import compute_snapshot
+
+    rng = np.random.default_rng(5)
+    index = pd.date_range("2020-01-01", periods=600, freq="B", name="date")
+    prices = pd.Series(100 * np.exp(np.cumsum(rng.standard_normal(600) * 0.01)), index=index)
+    panel = pd.DataFrame({"gold_futures": prices})
+
+    snap = compute_snapshot(panel, "gold_futures")
+    assert snap is not None
+
+    returns = np.log(prices / prices.shift(1)).dropna()
+    assert snap.n_observations == len(returns)
+    assert snap.last_date == str(prices.index.max().date())
+    assert snap.last_price == pytest.approx(float(prices.iloc[-1]))
+    assert snap.excess_kurtosis == pytest.approx(float(returns.kurtosis()))
+    assert snap.skewness == pytest.approx(float(returns.skew()))
+
+
+def test_snapshot_reflects_the_data_it_was_given() -> None:
+    """Data afkappen verandert de momentopname aantoonbaar.
+
+    Zonder deze eigenschap kun je twee momentopnamen vergelijken die in
+    werkelijkheid dezelfde data beschrijven, en concludeer je ten onrechte
+    dat er niets veranderd is.
+    """
+    sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+    from compare_runs import compute_snapshot
+
+    rng = np.random.default_rng(9)
+    index = pd.date_range("2020-01-01", periods=600, freq="B", name="date")
+    prices = pd.Series(100 * np.exp(np.cumsum(rng.standard_normal(600) * 0.01)), index=index)
+    panel = pd.DataFrame({"gold_futures": prices})
+
+    full = compute_snapshot(panel, "gold_futures")
+    truncated = compute_snapshot(panel.iloc[:-10], "gold_futures")
+
+    assert full is not None and truncated is not None
+    assert full.n_observations == truncated.n_observations + 10
+    assert full.last_date != truncated.last_date
+
+
+def test_compute_snapshot_skips_short_series() -> None:
+    """Een te korte reeks levert None op in plaats van onzinstatistieken."""
+    sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+    from compare_runs import compute_snapshot
+
+    index = pd.date_range("2024-01-01", periods=20, freq="D", name="date")
+    panel = pd.DataFrame({"gold_futures": np.arange(20, dtype=float) + 100}, index=index)
+
+    assert compute_snapshot(panel, "gold_futures") is None
+    assert compute_snapshot(panel, "bestaat_niet") is None
