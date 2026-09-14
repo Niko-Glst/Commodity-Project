@@ -113,6 +113,34 @@ bouwen van de modelmatrix, wordt elke driver met dat aantal dagen gelagd
 voordat hij op het goudrendement wordt aangesloten. Dat is een expliciete,
 zichtbare stap in plaats van een impliciete aanname.
 
+### Zichtbaar in de eigen data
+
+Een ophaalronde op maandag 14 september 2026 leverde dit op:
+
+| Bron | Reeks | Laatste observatie |
+|---|---|---|
+| yfinance | GC=F, ^GSPC, ^VIX, SI=F, DXY | 2026-09-14 (vandaag) |
+| FRED | T10Y2Y, T10YIE | 2026-09-14 (vandaag) |
+| FRED | DFII10, DTWEXBGS, DFF, BAMLH0A0HYM2 | 2026-09-11 (vrijdag) |
+| FRED | WALCL (wekelijks) | 2026-09-09 |
+
+Drie dingen om op te merken:
+
+1. **Yahoo loopt voor op FRED.** Marktkoersen zijn er direct; FRED publiceert
+   de meeste reeksen pas de volgende werkdag. Dat is exact de vertraging van
+   één werkdag die `publication_lag_days=1` modelleert.
+2. **De vertraging verschilt per reeks.** T10Y2Y en T10YIE waren al bijgewerkt,
+   DFII10 en DTWEXBGS nog niet — terwijl T10YIE rekenkundig uit dezelfde
+   H.15-release komt als DFII10. De lag is dus geen constante maar hangt af
+   van het releaseschema en het moment waarop je ophaalt.
+3. **Een naïeve join op datum werkt niet.** Wie op 14 september een modelmatrix
+   bouwt met de laatste beschikbare waarde per reeks, combineert een
+   goudkoers van vandaag met een reële rente van vrijdag — zonder dat ergens
+   op te merken. Het lagen moet expliciet, en op de observatiedatum, niet op
+   "de laatste rij".
+
+Dit is geen theoretisch punt: het staat in de cache van dit project.
+
 > **Nuance die je in een gesprek moet kunnen maken:** de FRED-publicatie loopt
 > een dag achter, maar de onderliggende marktprijs was op dag *t* zelf al
 > zichtbaar op een Bloomberg-terminal. Een echte handelaar had het TIPS-rendement
