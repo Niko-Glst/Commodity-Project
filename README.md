@@ -6,6 +6,10 @@ inschatten van margeverplichtingen op futures-posities.
 
 **Status:** fase 1 van 4 (datalaag) — afgerond en getest.
 
+> **Nieuw hier, of even het overzicht kwijt?** Begin bij
+> **[docs/START_HIER.md](docs/START_HIER.md)** — het hele project in vier
+> bevindingen, één pagina. De rest van deze README is naslagwerk.
+
 ---
 
 ## Wat dit project *niet* is
@@ -101,6 +105,15 @@ python scripts/fetch_data.py --core       # alleen de kernreeksen
 python scripts/fetch_data.py --cache-info # wat staat er in de cache?
 ```
 
+### Zelftoets
+
+```powershell
+python scripts/zelftoets.py
+```
+
+Zes vragen over de vier bevindingen, met uitleg bij elk antwoord. Bedoeld om
+zelf te kunnen zien wat al zit en wat nog niet.
+
 Zonder FRED-sleutel draait het script gewoon door met alleen de
 yfinance-reeksen; het rapporteert per reeks wat er gelukt is. Dat is bewust:
 één onbereikbare bron mag een werksessie niet blokkeren.
@@ -133,24 +146,28 @@ tijdelijke cachemap.
 │   ├── analyse_cycles.py      # spectraalanalyse van de volatiliteit
 │   ├── check_setup.py         # controleert installatie en sleutels
 │   ├── fetch_data.py          # haalt op en toont basisstatistieken
-│   └── plot_distributions.py  # maakt de zes figuren
+│   ├── plot_distributions.py  # maakt de zes figuren
+│   └── zelftoets.py           # zes vragen over de bevindingen
 ├── tests/
 │   ├── test_data_layer.py
 │   ├── test_spectral.py
 │   └── test_viz.py
 ├── docs/
+│   ├── START_HIER.md          # het project in vier bevindingen (begin hier)
 │   ├── uitleg_datalaag.md     # hoe de code werkt, stap voor stap
-│   ├── cyclusanalyse.md       # zit er een cyclus in de volatiliteit?
 │   ├── begrippen.md           # elk statistisch begrip uitgelegd + links
-│   └── vintage_data.md        # revisies en look-ahead bias
+│   ├── vintage_data.md        # revisies en look-ahead bias
+│   └── gevorderd/             # verdieping, geen hoofdpad
 ├── output/figures/            # gitignored
 └── data/cache/                # gitignored
 ```
 
-Nieuw in dit project? Begin bij
-[docs/uitleg_datalaag.md](docs/uitleg_datalaag.md) — dat loopt de code door
-zonder theorie. Voor de statistische begrippen: [docs/begrippen.md](docs/begrippen.md),
-met een uitleg en een link per term.
+**Leeswijzer, in volgorde:**
+
+1. [START_HIER.md](docs/START_HIER.md) — de vier bevindingen, één pagina
+2. [uitleg_datalaag.md](docs/uitleg_datalaag.md) — hoe de code werkt, zonder theorie
+3. [begrippen.md](docs/begrippen.md) — naslagwerk per begrip, met links
+4. `docs/gevorderd/` — verdieping, alleen als je er zin in hebt
 
 ---
 
@@ -265,35 +282,20 @@ Zes figuren in `output/figures/`, elk met een uitleg in de terminal:
 | 4 | QQ-plot | De klassieke S-curve tegen normaal, bijna recht tegen t |
 | 5 | Volatiliteitsclustering | Richting onvoorspelbaar, grootte wél — de basis voor GARCH |
 | 6 | Reeksen vergeleken | Dikke staarten zijn niet uniek voor goud |
-| 7 | Spectrum van de volatiliteit | Geen cyclus; de referentiekeuze bepaalt het antwoord |
-| 8 | Slutsky-Yule-effect | Gladstrijken maakt golven die er niet waren |
-| 9 | Persistentie tegenover cyclus | Het onderscheid dat de vraag beantwoordt |
+
+Drie extra figuren over de cyclusvraag staan in `output/figures/gevorderd/`.
 
 ### Onderzoeksvraag: zit er een cyclus in de volatiliteit?
 
-```powershell
-python scripts/analyse_cycles.py
-```
-
-Rustige en onrustige periodes wisselen elkaar af — zit daar een ritme in dat
-je met een sinus of Fourier-reeks kunt voorspellen? **Nee**, en het pad naar
-dat antwoord staat in [docs/cyclusanalyse.md](docs/cyclusanalyse.md).
-
-Kort: tegen een naïeve permutatiereferentie leek er een cyclus van 1483 dagen
-te zitten. Dat was een artefact — permutatie vernietigt de *persistentie*, en
-de volatiliteit heeft een autocorrelatie van 0,985. Tegen een AR(1)-referentie
-die de persistentie behoudt, blijft structuur op 64 dagen over, maar die
-verklaart 0,8% van de variatie en presteert out-of-sample 66% slechter dan
-simpelweg de laatste waarde herhalen.
-
-| Model (walk-forward, 234 vensters, horizon 21 dagen) | RMSE |
-|---|---|
-| Laatste waarde (naïef) | **3,63** |
-| Sinus van 64 dagen | 6,03 |
-
-Wat eruitziet als cycliciteit is **persistentie**: onrust houdt aan en dooft
-uit, zonder vast ritme. Dat is wel voorspelbaar, maar anders — en precies wat
+Rustige en onrustige periodes wisselen elkaar af — zit daar een vast ritme in?
+**Nee.** Wat eruitziet als cycliciteit is *persistentie*: onrust houdt aan en
+dooft uit, zonder klok. Dat is wel voorspelbaar, maar anders — en precies wat
 GARCH modelleert.
+
+De volledige analyse (spectraalanalyse, referentieverdelingen, het
+Slutsky-Yule-effect) staat in
+[docs/gevorderd/cyclusanalyse.md](docs/gevorderd/cyclusanalyse.md). Dat is
+verdiepingsmateriaal, geen onderdeel van het hoofdpad.
 
 Drie dingen die uit de figuren kwamen en niet uit de tabel:
 
