@@ -112,12 +112,28 @@ dat", maar "ik heb het gemeten en dit kwam eruit".
 
 ---
 
-## De drie commando's die je nodig hebt
+## Vragen die hierbij horen
+
+Drie vragen die je stelde, uitgebreid beantwoord in
+[drie_vragen.md](drie_vragen.md):
+
+- Waar komt de 5-10%-vuistregel vandaan? (en waarom hij voor een kwartaal te
+  krap is)
+- Wat betekent de rechte lijn in een QQ-plot?
+- Wat is het verschil tussen de t-verdeling en de normale verdeling?
+
+Figuren daarbij: `python scripts/uitleg_figuren.py`
+
+---
+
+## De commando's die je nodig hebt
 
 ```powershell
 python scripts/check_setup.py         # werkt alles nog?
 python scripts/fetch_data.py          # data ophalen
 python scripts/plot_distributions.py  # de zes figuren maken
+python scripts/uitleg_figuren.py      # figuren bij de drie vragen
+python scripts/zelftoets.py           # zes vragen met uitleg
 ```
 
 Meer is er niet. De rest is naslagwerk.
