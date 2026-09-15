@@ -130,14 +130,17 @@ tijdelijke cachemap.
 │       ├── style.py           # gedeelde opmaak en kleuren
 │       └── distributions.py   # figuren over de verdeling
 ├── scripts/
+│   ├── analyse_cycles.py      # spectraalanalyse van de volatiliteit
 │   ├── check_setup.py         # controleert installatie en sleutels
 │   ├── fetch_data.py          # haalt op en toont basisstatistieken
 │   └── plot_distributions.py  # maakt de zes figuren
 ├── tests/
 │   ├── test_data_layer.py
+│   ├── test_spectral.py
 │   └── test_viz.py
 ├── docs/
 │   ├── uitleg_datalaag.md     # hoe de code werkt, stap voor stap
+│   ├── cyclusanalyse.md       # zit er een cyclus in de volatiliteit?
 │   ├── begrippen.md           # elk statistisch begrip uitgelegd + links
 │   └── vintage_data.md        # revisies en look-ahead bias
 ├── output/figures/            # gitignored
@@ -262,6 +265,35 @@ Zes figuren in `output/figures/`, elk met een uitleg in de terminal:
 | 4 | QQ-plot | De klassieke S-curve tegen normaal, bijna recht tegen t |
 | 5 | Volatiliteitsclustering | Richting onvoorspelbaar, grootte wél — de basis voor GARCH |
 | 6 | Reeksen vergeleken | Dikke staarten zijn niet uniek voor goud |
+| 7 | Spectrum van de volatiliteit | Geen cyclus; de referentiekeuze bepaalt het antwoord |
+| 8 | Slutsky-Yule-effect | Gladstrijken maakt golven die er niet waren |
+| 9 | Persistentie tegenover cyclus | Het onderscheid dat de vraag beantwoordt |
+
+### Onderzoeksvraag: zit er een cyclus in de volatiliteit?
+
+```powershell
+python scripts/analyse_cycles.py
+```
+
+Rustige en onrustige periodes wisselen elkaar af — zit daar een ritme in dat
+je met een sinus of Fourier-reeks kunt voorspellen? **Nee**, en het pad naar
+dat antwoord staat in [docs/cyclusanalyse.md](docs/cyclusanalyse.md).
+
+Kort: tegen een naïeve permutatiereferentie leek er een cyclus van 1483 dagen
+te zitten. Dat was een artefact — permutatie vernietigt de *persistentie*, en
+de volatiliteit heeft een autocorrelatie van 0,985. Tegen een AR(1)-referentie
+die de persistentie behoudt, blijft structuur op 64 dagen over, maar die
+verklaart 0,8% van de variatie en presteert out-of-sample 66% slechter dan
+simpelweg de laatste waarde herhalen.
+
+| Model (walk-forward, 234 vensters, horizon 21 dagen) | RMSE |
+|---|---|
+| Laatste waarde (naïef) | **3,63** |
+| Sinus van 64 dagen | 6,03 |
+
+Wat eruitziet als cycliciteit is **persistentie**: onrust houdt aan en dooft
+uit, zonder vast ritme. Dat is wel voorspelbaar, maar anders — en precies wat
+GARCH modelleert.
 
 Drie dingen die uit de figuren kwamen en niet uit de tabel:
 
