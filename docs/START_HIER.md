@@ -132,6 +132,10 @@ voor dag:
 
 Doorlopen: `python scripts/uitleg_marge.py`
 
+En het directe antwoord op "hoeveel cash heb ik nodig?" staat in
+[hoeveel_cash.md](hoeveel_cash.md) — inclusief waarom een hedge iets anders
+is dan een kale short.
+
 ---
 
 ## De commando's die je nodig hebt

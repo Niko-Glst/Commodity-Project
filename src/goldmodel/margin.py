@@ -86,6 +86,7 @@ class MarginResult:
     n_margin_calls: int = 0
     largest_single_call: float = 0.0
     peak_cash_needed: float = 0.0
+    extra_cash_needed: float = 0.0
     net_loss: float = 0.0
     final_balance: float = 0.0
 
@@ -191,20 +192,35 @@ def simulate_margin(
 
     result.total_deposited = cumulative_deposited
     result.final_balance = balance
-
-    # Twee verschillende getallen die je uit elkaar moet houden:
-    #
-    # peak_cash_needed — hoeveel cash je BESCHIKBAAR moest hebben om alle
-    #   margin calls te kunnen voldoen. Dit is wat je buffer moet dekken.
-    #
-    # net_loss — wat je uiteindelijk KWIJT bent. Lager, omdat een deel van
-    #   het gestorte geld gewoon op je rekening staat en terugkomt als je de
-    #   positie sluit.
-    #
-    # Voor de buffervraag telt de eerste; voor de vraag "wat kost dit mij"
-    # de tweede. Ze verwarren leidt tot een te hoge schatting van de kosten.
-    result.peak_cash_needed = cumulative_deposited - initial_margin
     result.net_loss = cumulative_deposited - balance
+
+    # peak_cash_needed is de PIEK van de netto-inleg, niet de som van alle
+    # stortingen. Het verschil: stort je op dag 3 en krijg je op dag 8 een
+    # deel terug doordat de prijs meezat, dan hoefde die tweede storting niet
+    # uit verse cash te komen.
+    #
+    # Netto-inleg op moment t = alles wat je tot dan gestort hebt, min wat er
+    # op dat moment op de rekening staat. De piek daarvan is het bedrag dat je
+    # daadwerkelijk beschikbaar moest hebben.
+    #
+    # De som van alle stortingen overschat dat, en hoe langer de horizon hoe
+    # meer: over een kwartaal scheelde het in de goudreeks ongeveer 1,5
+    # procentpunt.
+    # Let op: dit is de totale netto-inleg op het diepste punt, inclusief de
+    # initial margin die je toch al gestort had. Het is dus "hoeveel geld zat
+    # er op het slechtste moment in deze positie", niet "hoeveel EXTRA cash
+    # had ik nodig". Dat tweede is peak_cash_needed min de initial margin.
+    # Ondergrens op nul: loopt de positie in je voordeel, dan staat er méér op
+    # de rekening dan je stortte en is de netto-inleg negatief. "Ik had min
+    # 5000 dollar nodig" is geen zinnige uitspraak.
+    result.peak_cash_needed = max(
+        0.0,
+        max(
+            (day.cumulative_deposited - day.balance_after_call for day in result.days),
+            default=0.0,
+        ),
+    )
+    result.extra_cash_needed = max(result.peak_cash_needed - initial_margin, 0.0)
     return result
 
 
@@ -259,7 +275,9 @@ def buffer_needed_for_confidence(
         window = prices.iloc[start : start + horizon_days + 1]
         outcome = simulate_margin(window, settings)
         notional = outcome.notional_start
-        buffers_pct.append(outcome.peak_cash_needed / notional * 100)
+        # extra_cash_needed, niet peak_cash_needed: de initial margin had je
+        # toch al gestort, die hoort niet in de BUFFER-vraag thuis.
+        buffers_pct.append(outcome.extra_cash_needed / notional * 100)
         if outcome.n_margin_calls:
             windows_with_call += 1
 

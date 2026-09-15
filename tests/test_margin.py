@@ -235,3 +235,36 @@ def test_calm_market_needs_less_buffer_than_volatile() -> None:
     )
 
     assert volatile_need["buffer_pct"] > calm_need["buffer_pct"] * 2
+
+
+def test_peak_cash_is_the_low_point_not_the_sum_of_deposits() -> None:
+    """De piekbehoefte is het diepste punt, niet de som van alle stortingen.
+
+    Scenario: de prijs schiet omhoog (storting nodig), zakt terug (geld komt
+    terug op de rekening), en schiet weer omhoog (opnieuw storten). De som van
+    de stortingen is dan veel groter dan wat je ooit tegelijk nodig had.
+
+    Dit was een echte fout in dit project: over een kwartaal overschatte de
+    som de werkelijke behoefte met zo'n 5 procentpunt.
+    """
+    prices = make_prices([2000.0, 2300.0, 2000.0, 2300.0, 2000.0])
+    result = simulate_margin(prices, MarginSettings(is_short=True))
+
+    # Elke uitschieter naar 2300 kost 300 x 100 = 30.000 aan netto-inleg.
+    assert result.peak_cash_needed == pytest.approx(30_000.0)
+    # De som van alle stortingen is fors hoger, want er werd twee keer
+    # gestort terwijl het geld tussendoor terugkwam.
+    assert result.total_deposited - result.initial_margin > result.peak_cash_needed
+    # En per saldo is er niets verloren: de prijs staat weer op de startwaarde.
+    assert result.net_loss == pytest.approx(0.0, abs=1e-6)
+
+
+def test_extra_cash_excludes_the_initial_margin() -> None:
+    """extra_cash_needed telt niet mee wat je toch al gestort had."""
+    prices = make_prices([2000.0, 2050.0])
+    result = simulate_margin(prices, MarginSettings(is_short=True))
+
+    assert result.extra_cash_needed == pytest.approx(
+        max(result.peak_cash_needed - result.initial_margin, 0.0)
+    )
+    assert result.extra_cash_needed <= result.peak_cash_needed

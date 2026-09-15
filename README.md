@@ -160,6 +160,7 @@ tijdelijke cachemap.
 │   ├── START_HIER.md          # het project in vier bevindingen (begin hier)
 │   ├── drie_vragen.md         # marge-vuistregel, QQ-plot, t-verdeling
 │   ├── marge_uitgelegd.md     # margedynamiek en de 99%-grens
+│   ├── hoeveel_cash.md        # hoeveel buffer echt nodig is
 │   ├── uitleg_datalaag.md     # hoe de code werkt, stap voor stap
 │   ├── begrippen.md           # elk statistisch begrip uitgelegd + links
 │   ├── vintage_data.md        # revisies en look-ahead bias

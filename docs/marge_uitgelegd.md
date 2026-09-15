@@ -108,7 +108,7 @@ voldoen.
 
 ### Twee getallen die je uit elkaar moet houden
 
-**1. Wat je beschikbaar moest hebben: $17.073** (23,0% van de notionele waarde)
+**1. Wat je beschikbaar moest hebben: $16.260** (21,9% van de notionele waarde)
 
 Dit is wat je buffer moet dekken. Kon je dit niet ophoesten, dan was je
 uitgestopt.
@@ -131,9 +131,9 @@ deel later terug.
 |---|---|---|
 | 5% | $3.706 | Nee |
 | 10% | $7.413 | Nee |
-| Werkelijk nodig | $17.073 | 23% |
+| Werkelijk nodig | $16.260 | 21,9% |
 
-Maar let op: **dit is de ergste periode uit 23 jaar.** Altijd 23% aanhouden is
+Maar let op: **dit is de ergste periode uit 23 jaar.** Altijd 22% aanhouden is
 overdreven duur — dat kapitaal doet de rest van de tijd niets. Dat is precies de
 afweging waar fase 4 over gaat.
 
@@ -198,26 +198,31 @@ de margerekening dag voor dag, kijk hoeveel je had moeten bijstorten.
 Dit is dus niet "hoeveel bewoog de prijs" maar "hoeveel cash had ik nodig" —
 inclusief het feit dat de margevereiste meestijgt.
 
-| Horizon | Mediaan | 99%-grens | Ergste | Kans op margin call |
+> **Deze tabel is gecorrigeerd.** Een eerdere versie telde alle stortingen over
+> de hele periode op, ook als het geld onderweg weer terugkwam. Zie
+> [hoeveel_cash.md](hoeveel_cash.md) voor de uitleg.
+
+| Horizon | Mediaan | 95% | 99% | Ergste |
 |---|---|---|---|---|
-| 1 week | 1,1% | 6,8% | 12,5% | 67% |
-| 1 maand | 3,2% | 16,3% | 21,7% | 86% |
-| **1 kwartaal** | **6,9%** | **30,3%** | 35,2% | 92% |
+| 1 week | 0,0% | 0,0% | 2,2% | 6,9% |
+| 1 maand | 0,0% | 5,9% | 10,2% | 14,5% |
+| **1 kwartaal** | **1,7%** | **16,3%** | **24,8%** | 28,5% |
 
 Als percentage van de notionele waarde, bovenop de initial margin.
 
 ### Lees de mediaan en de 99%-grens naast elkaar
 
-Voor een kwartaal: in de helft van de gevallen heb je **6,9%** nodig. In het
-slechtste procent **30,3%**. Dat is een factor 4,4 verschil.
+Voor een kwartaal: in de helft van de gevallen heb je **1,7%** nodig. In het
+slechtste procent **24,8%**. Dat is een factor 15 verschil.
 
 **Dat verschil ís het probleem met een vast percentage.** Je houdt bijna altijd
 te veel aan — kapitaal dat niets opbrengt — en precies wanneer het ertoe doet te
 weinig.
 
-Kijk ook naar de laatste kolom: over een kwartaal krijg je in **92%** van de
-gevallen minstens één margin call. Dat is dus geen uitzondering maar de regel,
-en je buffer moet daarop berekend zijn.
+**Belangrijk voorbehoud:** deze cijfers gelden voor een **kale short**. Hedge je
+tegenover fysiek goud, dan is dit geen verlies maar een liquiditeitsbehoefte —
+je onderliggende positie wint immers evenveel. Zie
+[hoeveel_cash.md](hoeveel_cash.md).
 
 ---
 
