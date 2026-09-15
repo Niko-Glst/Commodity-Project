@@ -124,6 +124,14 @@ Drie vragen die je stelde, uitgebreid beantwoord in
 
 Figuren daarbij: `python scripts/uitleg_figuren.py`
 
+En in [marge_uitgelegd.md](marge_uitgelegd.md), met een echt voorbeeld dag
+voor dag:
+
+- Hoe werkt de margedynamiek als je maar 5% betaalt?
+- Wat betekent "de 99%-grens" precies?
+
+Doorlopen: `python scripts/uitleg_marge.py`
+
 ---
 
 ## De commando's die je nodig hebt
@@ -133,6 +141,7 @@ python scripts/check_setup.py         # werkt alles nog?
 python scripts/fetch_data.py          # data ophalen
 python scripts/plot_distributions.py  # de zes figuren maken
 python scripts/uitleg_figuren.py      # figuren bij de drie vragen
+python scripts/uitleg_marge.py        # margemechaniek dag voor dag
 python scripts/zelftoets.py           # zes vragen met uitleg
 ```
 

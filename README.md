@@ -134,6 +134,7 @@ tijdelijke cachemap.
 ```
 ├── src/goldmodel/
 │   ├── config.py              # reeksdefinities + economische motivatie
+│   ├── margin.py              # margeboekhouding en bufferberekening
 │   ├── data/
 │   │   ├── cache.py           # Parquet-cache met TTL en stale-fallback
 │   │   ├── fred_client.py     # FRED + ALFRED (vintage)
@@ -148,14 +149,17 @@ tijdelijke cachemap.
 │   ├── fetch_data.py          # haalt op en toont basisstatistieken
 │   ├── plot_distributions.py  # maakt de zes figuren
 │   ├── uitleg_figuren.py      # figuren bij de drie vragen
+│   ├── uitleg_marge.py        # margemechaniek dag voor dag
 │   └── zelftoets.py           # zes vragen over de bevindingen
 ├── tests/
 │   ├── test_data_layer.py
+│   ├── test_margin.py
 │   ├── test_spectral.py
 │   └── test_viz.py
 ├── docs/
 │   ├── START_HIER.md          # het project in vier bevindingen (begin hier)
 │   ├── drie_vragen.md         # marge-vuistregel, QQ-plot, t-verdeling
+│   ├── marge_uitgelegd.md     # margedynamiek en de 99%-grens
 │   ├── uitleg_datalaag.md     # hoe de code werkt, stap voor stap
 │   ├── begrippen.md           # elk statistisch begrip uitgelegd + links
 │   ├── vintage_data.md        # revisies en look-ahead bias
