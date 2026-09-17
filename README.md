@@ -4,7 +4,7 @@ Een kwantitatief onderzoeksproject naar de relatie tussen de goudprijs en
 macro-economische variabelen, met een Monte Carlo-simulatie voor het
 inschatten van margeverplichtingen op futures-posities.
 
-**Status:** fase 1 van 4 (datalaag) — afgerond en getest.
+**Status:** fase 1 afgerond; fase 2 (verkennende analyse) gestart.
 
 > **Nieuw hier, of even het overzicht kwijt?** Begin bij
 > **[docs/START_HIER.md](docs/START_HIER.md)** — het hele project in vier
@@ -105,18 +105,18 @@ python scripts/fetch_data.py --core       # alleen de kernreeksen
 python scripts/fetch_data.py --cache-info # wat staat er in de cache?
 ```
 
-### Zelftoets
-
-```powershell
-python scripts/zelftoets.py
-```
-
-Zes vragen over de vier bevindingen, met uitleg bij elk antwoord. Bedoeld om
-zelf te kunnen zien wat al zit en wat nog niet.
-
 Zonder FRED-sleutel draait het script gewoon door met alleen de
 yfinance-reeksen; het rapporteert per reeks wat er gelukt is. Dat is bewust:
 één onbereikbare bron mag een werksessie niet blokkeren.
+
+### Analyses draaien
+
+```powershell
+python scripts/plot_distributions.py     # fase 1: de zes verdelingsfiguren
+python scripts/fase2_stationariteit.py   # fase 2: ADF/KPSS + schijnregressie
+python scripts/uitleg_marge.py           # margemechaniek dag voor dag
+python scripts/zelftoets.py              # zes vragen met uitleg bij elk antwoord
+```
 
 ### Tests
 
@@ -142,7 +142,10 @@ tijdelijke cachemap.
 │   │   └── loader.py          # orkestratie, paneelopbouw
 │   └── viz/
 │       ├── style.py           # gedeelde opmaak en kleuren
-│       └── distributions.py   # figuren over de verdeling
+│       ├── distributions.py   # figuren over de verdeling
+│       ├── explain.py         # uitlegfiguren (QQ, t-verdeling, marge)
+│       ├── spectral.py        # spectraalanalyse (gevorderd)
+│       └── stationarity.py    # stationariteit en schijnregressie
 ├── scripts/
 │   ├── analyse_cycles.py      # spectraalanalyse van de volatiliteit
 │   ├── check_setup.py         # controleert installatie en sleutels
