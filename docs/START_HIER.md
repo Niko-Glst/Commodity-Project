@@ -157,13 +157,17 @@ Meer is er niet. De rest is naslagwerk.
 
 **Fase 1 is af.** We weten hoe goudprijzen zich gedragen.
 
-**Fase 2 is de volgende stap:** kunnen we die bewegingen verklaren uit
+**Fase 2 is begonnen.** De vraag: kunnen we die bewegingen verklaren uit
 macro-economische data — de rente, de dollar, de inflatieverwachting?
 
-Dat begint bij één vraag, en dat is de enige waar we het de volgende keer over
-hebben:
+Stap 1 is af: [fase2.md](fase2.md) behandelt de valkuil die daarvoor weggenomen
+moet worden.
 
 > Waarom mag je de goudprijs niet zomaar tegen de rente regresseren?
 
-Het antwoord heet **stationariteit**, en het is de belangrijkste valkuil in de
-hele econometrie. Eén begrip, één figuur, geen zijpaden.
+Het antwoord heet **stationariteit**. Kort: op prijsniveaus vindt een regressie
+in **92% van de gevallen** een "significant" verband in pure toevalsruis. Tien
+van je twaalf reeksen zijn niet-stationair, dus alles gaat als rendement of
+eerste verschil het model in.
+
+Draaien: `python scripts/fase2_stationariteit.py`

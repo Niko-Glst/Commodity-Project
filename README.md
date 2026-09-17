@@ -55,7 +55,7 @@ hij is, en onder welke marktomstandigheden.
 | Fase | Laag | Inhoud | Status |
 |---|---|---|---|
 | 1 | Data | FRED + yfinance ophalen, cachen, vintage-vraag | **klaar** |
-| 2 | Verkenning | Stationariteit, ACF/PACF, correlatiestabiliteit, staarten | volgt |
+| 2 | Verkenning | Stationariteit, ACF/PACF, correlatiestabiliteit, staarten | **bezig** |
 | 3 | Regressie | OLS met Newey-West, VAR, ridge/lasso, walk-forward | volgt |
 | 4 | Simulatie | GBM → t-schokken → GARCH, VaR/ES, margebehoefte | volgt |
 
@@ -150,10 +150,12 @@ tijdelijke cachemap.
 │   ├── plot_distributions.py  # maakt de zes figuren
 │   ├── uitleg_figuren.py      # figuren bij de drie vragen
 │   ├── uitleg_marge.py        # margemechaniek dag voor dag
+│   ├── fase2_stationariteit.py # ADF/KPSS + schijnregressie
 │   └── zelftoets.py           # zes vragen over de bevindingen
 ├── tests/
 │   ├── test_data_layer.py
 │   ├── test_margin.py
+│   ├── test_stationarity.py
 │   ├── test_spectral.py
 │   └── test_viz.py
 ├── docs/
@@ -161,6 +163,7 @@ tijdelijke cachemap.
 │   ├── drie_vragen.md         # marge-vuistregel, QQ-plot, t-verdeling
 │   ├── marge_uitgelegd.md     # margedynamiek en de 99%-grens
 │   ├── hoeveel_cash.md        # hoeveel buffer echt nodig is
+│   ├── fase2.md               # stationariteit en schijnregressie
 │   ├── uitleg_datalaag.md     # hoe de code werkt, stap voor stap
 │   ├── begrippen.md           # elk statistisch begrip uitgelegd + links
 │   ├── vintage_data.md        # revisies en look-ahead bias
