@@ -160,9 +160,16 @@ Meer is er niet. De rest is naslagwerk.
 **Fase 2 is begonnen.** De vraag: kunnen we die bewegingen verklaren uit
 macro-economische data — de rente, de dollar, de inflatieverwachting?
 
-Stap 1 is af. **Begin bij [adf_kpss_vanaf_nul.md](adf_kpss_vanaf_nul.md)** —
-dat legt vanaf nul uit wat er in fase 2 gebeurt en waarom ADF en KPSS er
-plots zijn. [fase2.md](fase2.md) is de technische versie ervan.
+**Fase 2 is af.** De resultaten staan in
+**[fase2_resultaat.md](fase2_resultaat.md)** — zes bevindingen.
+
+De kern: de drie theoretisch belangrijkste drivers kloppen qua teken, maar
+zelfs de sterkste verklaart maar 16% van de dagelijkse goudbeweging, en vier
+van de vijf verbanden wisselen van teken door de tijd.
+
+Nieuw bij dit onderwerp? Begin bij
+[adf_kpss_vanaf_nul.md](adf_kpss_vanaf_nul.md) — dat legt vanaf nul uit
+waarom fase 2 met stationariteit begint.
 
 > Waarom mag je de goudprijs niet zomaar tegen de rente regresseren?
 

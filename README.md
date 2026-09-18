@@ -4,7 +4,7 @@ Een kwantitatief onderzoeksproject naar de relatie tussen de goudprijs en
 macro-economische variabelen, met een Monte Carlo-simulatie voor het
 inschatten van margeverplichtingen op futures-posities.
 
-**Status:** fase 1 afgerond; fase 2 (verkennende analyse) gestart.
+**Status:** fase 1 en 2 afgerond; fase 3 (regressiemodellen) volgt.
 
 > **Nieuw hier, of even het overzicht kwijt?** Begin bij
 > **[docs/START_HIER.md](docs/START_HIER.md)** — het hele project in vier
@@ -55,7 +55,7 @@ hij is, en onder welke marktomstandigheden.
 | Fase | Laag | Inhoud | Status |
 |---|---|---|---|
 | 1 | Data | FRED + yfinance ophalen, cachen, vintage-vraag | **klaar** |
-| 2 | Verkenning | Stationariteit, ACF/PACF, correlatiestabiliteit, staarten | **bezig** |
+| 2 | Verkenning | Stationariteit, ACF/PACF, correlatiestabiliteit, staarten | **klaar** |
 | 3 | Regressie | OLS met Newey-West, VAR, ridge/lasso, walk-forward | volgt |
 | 4 | Simulatie | GBM → t-schokken → GARCH, VaR/ES, margebehoefte | volgt |
 
@@ -115,6 +115,7 @@ yfinance-reeksen; het rapporteert per reeks wat er gelukt is. Dat is bewust:
 python scripts/plot_distributions.py     # fase 1: de zes verdelingsfiguren
 python scripts/uitleg_adf_kpss.py        # fase 2 vanaf nul uitgelegd
 python scripts/fase2_stationariteit.py   # fase 2: ADF/KPSS + schijnregressie
+python scripts/fase2_correlaties.py      # fase 2: correlaties en stabiliteit
 python scripts/uitleg_marge.py           # margemechaniek dag voor dag
 python scripts/zelftoets.py              # zes vragen met uitleg bij elk antwoord
 ```
@@ -145,6 +146,7 @@ tijdelijke cachemap.
 │       ├── style.py           # gedeelde opmaak en kleuren
 │       ├── distributions.py   # figuren over de verdeling
 │       ├── basics.py          # uitlegfiguren fase 1 -> fase 2
+│       ├── correlations.py    # correlaties en rolling stabiliteit
 │       ├── explain.py         # uitlegfiguren (QQ, t-verdeling, marge)
 │       ├── spectral.py        # spectraalanalyse (gevorderd)
 │       └── stationarity.py    # stationariteit en schijnregressie
@@ -156,11 +158,13 @@ tijdelijke cachemap.
 │   ├── uitleg_figuren.py      # figuren bij de drie vragen
 │   ├── uitleg_marge.py        # margemechaniek dag voor dag
 │   ├── fase2_stationariteit.py # ADF/KPSS + schijnregressie
+│   ├── fase2_correlaties.py   # correlaties, stabiliteit, multicollineariteit
 │   ├── uitleg_adf_kpss.py     # dezelfde stof, vanaf nul
 │   └── zelftoets.py           # zes vragen over de bevindingen
 ├── tests/
 │   ├── test_data_layer.py
 │   ├── test_margin.py
+│   ├── test_correlations.py
 │   ├── test_stationarity.py
 │   ├── test_spectral.py
 │   └── test_viz.py
@@ -171,6 +175,7 @@ tijdelijke cachemap.
 │   ├── hoeveel_cash.md        # hoeveel buffer echt nodig is
 │   ├── adf_kpss_vanaf_nul.md  # wat fase 2 doet, vanaf nul uitgelegd
 │   ├── fase2.md               # stationariteit en schijnregressie (technisch)
+│   ├── fase2_resultaat.md     # de zes bevindingen van fase 2
 │   ├── uitleg_datalaag.md     # hoe de code werkt, stap voor stap
 │   ├── begrippen.md           # elk statistisch begrip uitgelegd + links
 │   ├── vintage_data.md        # revisies en look-ahead bias
