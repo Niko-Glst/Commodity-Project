@@ -113,6 +113,7 @@ yfinance-reeksen; het rapporteert per reeks wat er gelukt is. Dat is bewust:
 
 ```powershell
 python scripts/plot_distributions.py     # fase 1: de zes verdelingsfiguren
+python scripts/uitleg_adf_kpss.py        # fase 2 vanaf nul uitgelegd
 python scripts/fase2_stationariteit.py   # fase 2: ADF/KPSS + schijnregressie
 python scripts/uitleg_marge.py           # margemechaniek dag voor dag
 python scripts/zelftoets.py              # zes vragen met uitleg bij elk antwoord
@@ -143,6 +144,7 @@ tijdelijke cachemap.
 │   └── viz/
 │       ├── style.py           # gedeelde opmaak en kleuren
 │       ├── distributions.py   # figuren over de verdeling
+│       ├── basics.py          # uitlegfiguren fase 1 -> fase 2
 │       ├── explain.py         # uitlegfiguren (QQ, t-verdeling, marge)
 │       ├── spectral.py        # spectraalanalyse (gevorderd)
 │       └── stationarity.py    # stationariteit en schijnregressie
@@ -154,6 +156,7 @@ tijdelijke cachemap.
 │   ├── uitleg_figuren.py      # figuren bij de drie vragen
 │   ├── uitleg_marge.py        # margemechaniek dag voor dag
 │   ├── fase2_stationariteit.py # ADF/KPSS + schijnregressie
+│   ├── uitleg_adf_kpss.py     # dezelfde stof, vanaf nul
 │   └── zelftoets.py           # zes vragen over de bevindingen
 ├── tests/
 │   ├── test_data_layer.py
@@ -166,7 +169,8 @@ tijdelijke cachemap.
 │   ├── drie_vragen.md         # marge-vuistregel, QQ-plot, t-verdeling
 │   ├── marge_uitgelegd.md     # margedynamiek en de 99%-grens
 │   ├── hoeveel_cash.md        # hoeveel buffer echt nodig is
-│   ├── fase2.md               # stationariteit en schijnregressie
+│   ├── adf_kpss_vanaf_nul.md  # wat fase 2 doet, vanaf nul uitgelegd
+│   ├── fase2.md               # stationariteit en schijnregressie (technisch)
 │   ├── uitleg_datalaag.md     # hoe de code werkt, stap voor stap
 │   ├── begrippen.md           # elk statistisch begrip uitgelegd + links
 │   ├── vintage_data.md        # revisies en look-ahead bias

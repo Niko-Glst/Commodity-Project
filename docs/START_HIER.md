@@ -160,8 +160,9 @@ Meer is er niet. De rest is naslagwerk.
 **Fase 2 is begonnen.** De vraag: kunnen we die bewegingen verklaren uit
 macro-economische data — de rente, de dollar, de inflatieverwachting?
 
-Stap 1 is af: [fase2.md](fase2.md) behandelt de valkuil die daarvoor weggenomen
-moet worden.
+Stap 1 is af. **Begin bij [adf_kpss_vanaf_nul.md](adf_kpss_vanaf_nul.md)** —
+dat legt vanaf nul uit wat er in fase 2 gebeurt en waarom ADF en KPSS er
+plots zijn. [fase2.md](fase2.md) is de technische versie ervan.
 
 > Waarom mag je de goudprijs niet zomaar tegen de rente regresseren?
 
