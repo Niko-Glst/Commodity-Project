@@ -4,11 +4,11 @@ Een kwantitatief onderzoeksproject naar de relatie tussen de goudprijs en
 macro-economische variabelen, met een Monte Carlo-simulatie voor het
 inschatten van margeverplichtingen op futures-posities.
 
-**Status:** fase 1 en 2 afgerond; fase 3 (regressiemodellen) volgt.
+**Status:** fase 1, 2 en 3 afgerond; fase 4 (Monte Carlo) volgt.
 
-> **Nieuw hier, of even het overzicht kwijt?** Begin bij
-> **[docs/START_HIER.md](docs/START_HIER.md)** — het hele project in vier
-> bevindingen, één pagina. De rest van deze README is naslagwerk.
+> **Even het overzicht kwijt?** Begin bij
+> **[docs/HET_HELE_VERHAAL.md](docs/HET_HELE_VERHAAL.md)** — van nul tot nu,
+> één pagina: wat we bouwen, wat eruit kwam, en wat je eruit leert.
 
 ---
 
@@ -56,7 +56,7 @@ hij is, en onder welke marktomstandigheden.
 |---|---|---|---|
 | 1 | Data | FRED + yfinance ophalen, cachen, vintage-vraag | **klaar** |
 | 2 | Verkenning | Stationariteit, ACF/PACF, correlatiestabiliteit, staarten | **klaar** |
-| 3 | Regressie | OLS met Newey-West, VAR, ridge/lasso, walk-forward | volgt |
+| 3 | Regressie | OLS met Newey-West, ridge, walk-forward | **klaar** |
 | 4 | Simulatie | GBM → t-schokken → GARCH, VaR/ES, margebehoefte | volgt |
 
 De validatielaag (walk-forward backtesting, benchmarkvergelijking, Kupiec-toets)
@@ -116,6 +116,7 @@ python scripts/plot_distributions.py     # fase 1: de zes verdelingsfiguren
 python scripts/uitleg_adf_kpss.py        # fase 2 vanaf nul uitgelegd
 python scripts/fase2_stationariteit.py   # fase 2: ADF/KPSS + schijnregressie
 python scripts/fase2_correlaties.py      # fase 2: correlaties en stabiliteit
+python scripts/fase3_regressie.py        # fase 3: OLS + walk-forward validatie
 python scripts/uitleg_marge.py           # margemechaniek dag voor dag
 python scripts/zelftoets.py              # zes vragen met uitleg bij elk antwoord
 ```
@@ -137,6 +138,7 @@ tijdelijke cachemap.
 ├── src/goldmodel/
 │   ├── config.py              # reeksdefinities + economische motivatie
 │   ├── margin.py              # margeboekhouding en bufferberekening
+│   ├── models.py              # regressie, walk-forward, Diebold-Mariano
 │   ├── data/
 │   │   ├── cache.py           # Parquet-cache met TTL en stale-fallback
 │   │   ├── fred_client.py     # FRED + ALFRED (vintage)
@@ -159,6 +161,7 @@ tijdelijke cachemap.
 │   ├── uitleg_marge.py        # margemechaniek dag voor dag
 │   ├── fase2_stationariteit.py # ADF/KPSS + schijnregressie
 │   ├── fase2_correlaties.py   # correlaties, stabiliteit, multicollineariteit
+│   ├── fase3_regressie.py     # OLS met Newey-West + walk-forward
 │   ├── verken_crack_spread.py # backlog-verkenning: crack spread als olie-leg
 │   ├── uitleg_adf_kpss.py     # dezelfde stof, vanaf nul
 │   └── zelftoets.py           # zes vragen over de bevindingen
@@ -167,6 +170,7 @@ tijdelijke cachemap.
 │   ├── test_margin.py
 │   ├── test_correlations.py
 │   ├── test_episodes.py
+│   ├── test_models.py
 │   ├── test_stationarity.py
 │   ├── test_spectral.py
 │   └── test_viz.py
@@ -178,6 +182,8 @@ tijdelijke cachemap.
 │   ├── adf_kpss_vanaf_nul.md  # wat fase 2 doet, vanaf nul uitgelegd
 │   ├── fase2.md               # stationariteit en schijnregressie (technisch)
 │   ├── fase2_resultaat.md     # de zes bevindingen van fase 2
+│   ├── fase3_resultaat.md     # verslaat een model een random walk?
+│   ├── HET_HELE_VERHAAL.md    # van nul tot nu, in één document
 │   ├── uitleg_datalaag.md     # hoe de code werkt, stap voor stap
 │   ├── begrippen.md           # elk statistisch begrip uitgelegd + links
 │   ├── vintage_data.md        # revisies en look-ahead bias
@@ -189,11 +195,12 @@ tijdelijke cachemap.
 
 **Leeswijzer, in volgorde:**
 
-1. [START_HIER.md](docs/START_HIER.md) — de vier bevindingen, één pagina
-2. [uitleg_datalaag.md](docs/uitleg_datalaag.md) — hoe de code werkt, zonder theorie
-3. [begrippen.md](docs/begrippen.md) — naslagwerk per begrip, met links
-4. `docs/gevorderd/` — verdieping, alleen als je er zin in hebt
-5. [`docs/backlog/`](docs/backlog/README.md) — ideeën met de reden waarom ze wachten
+1. [HET_HELE_VERHAAL.md](docs/HET_HELE_VERHAAL.md) — van nul tot nu, begin hier
+2. [START_HIER.md](docs/START_HIER.md) — fase 1 in vier bevindingen
+3. [uitleg_datalaag.md](docs/uitleg_datalaag.md) — hoe de code werkt, zonder theorie
+4. [begrippen.md](docs/begrippen.md) — naslagwerk per begrip, met links
+5. `docs/gevorderd/` — verdieping, alleen als je er zin in hebt
+6. [`docs/backlog/`](docs/backlog/README.md) — ideeën met de reden waarom ze wachten
 
 ---
 

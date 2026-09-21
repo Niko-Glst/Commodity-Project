@@ -1,5 +1,9 @@
 # Start hier
 
+> **Zoek je het volledige overzicht van fase 1 tot nu?** Dat staat in
+> [HET_HELE_VERHAAL.md](HET_HELE_VERHAAL.md). Dit document behandelt alleen
+> fase 1.
+
 Het hele project in vier bevindingen. Verder niets.
 
 De andere documenten zijn naslagwerk — je hoeft ze niet te lezen om verder te
