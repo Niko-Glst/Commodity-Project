@@ -159,12 +159,14 @@ tijdelijke cachemap.
 │   ├── uitleg_marge.py        # margemechaniek dag voor dag
 │   ├── fase2_stationariteit.py # ADF/KPSS + schijnregressie
 │   ├── fase2_correlaties.py   # correlaties, stabiliteit, multicollineariteit
+│   ├── verken_crack_spread.py # backlog-verkenning: crack spread als olie-leg
 │   ├── uitleg_adf_kpss.py     # dezelfde stof, vanaf nul
 │   └── zelftoets.py           # zes vragen over de bevindingen
 ├── tests/
 │   ├── test_data_layer.py
 │   ├── test_margin.py
 │   ├── test_correlations.py
+│   ├── test_episodes.py
 │   ├── test_stationarity.py
 │   ├── test_spectral.py
 │   └── test_viz.py
@@ -179,6 +181,7 @@ tijdelijke cachemap.
 │   ├── uitleg_datalaag.md     # hoe de code werkt, stap voor stap
 │   ├── begrippen.md           # elk statistisch begrip uitgelegd + links
 │   ├── vintage_data.md        # revisies en look-ahead bias
+│   ├── backlog/               # voorstellen die nog niet ingebouwd zijn
 │   └── gevorderd/             # verdieping, geen hoofdpad
 ├── output/figures/            # gitignored
 └── data/cache/                # gitignored
@@ -190,6 +193,7 @@ tijdelijke cachemap.
 2. [uitleg_datalaag.md](docs/uitleg_datalaag.md) — hoe de code werkt, zonder theorie
 3. [begrippen.md](docs/begrippen.md) — naslagwerk per begrip, met links
 4. `docs/gevorderd/` — verdieping, alleen als je er zin in hebt
+5. [`docs/backlog/`](docs/backlog/README.md) — ideeën met de reden waarom ze wachten
 
 ---
 

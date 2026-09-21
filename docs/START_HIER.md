@@ -138,6 +138,14 @@ is dan een kale short.
 
 ---
 
+## Ideeën die nog niet ingebouwd zijn
+
+Voorstellen met een eerste verkenning en de reden waarom ze wachten staan in
+[docs/backlog/](backlog/README.md). Zo raken ze niet kwijt, en is de afweging
+terugleesbaar.
+
+---
+
 ## De commando's die je nodig hebt
 
 ```powershell
