@@ -1,3 +1,25 @@
+> **Waarom dit in `gevorderd/` staat en niet in het hoofdpad**
+>
+> Spectraalanalyse op financiële rendementen vindt bijna altijd "cycli" die
+> out-of-sample verdwijnen. Het is een verleidelijk instrument met een slechte
+> staat van dienst, en een portfoliomanager prikt er terecht doorheen.
+>
+> Dit hoofdstuk staat er daarom **als negatief resultaat en als
+> methodologisch voorbeeld**, niet als bevinding:
+>
+> - De gevonden piek op 64 dagen verklaart **0,8%** van de variantie en faalt
+>   out-of-sample.
+> - Met een naïeve (geschudde) referentie zou ik een "cyclus" van 1.483 dagen
+>   hebben gevonden die niets anders is dan de trage drift van de reeks.
+> - De correctie — een AR(1)-referentie die de persistentie behoudt — is de
+>   les die overdraagbaar is naar elke andere toets in dit project.
+>
+> Er is **geen economisch argument** waarom goudvolatiliteit een cyclus van 64
+> dagen zou hebben. Zonder dat argument hoort een gevonden piek niet in een
+> model, en daarom zit hij er niet in.
+
+---
+
 # Zit er een cyclus in de volatiliteit?
 
 Een onderzoeksvraag die met "nee" eindigt, en waarbij het pad naar dat antwoord

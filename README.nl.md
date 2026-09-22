@@ -105,6 +105,27 @@ margeberekening heeft alleen het tweede nodig.
 - **Diebold-Mariano-toets** om een echt verschil van ruis te scheiden: geen
   significant verschil.
 
+### Signaal, backtest en kostenmodel
+
+De regressie produceert een positie; de backtest vertaalt die naar rendement na
+kosten. Drie dingen die de meeste backtests fout doen:
+
+- **De executie-lag wordt in de code afgedwongen.** `run_backtest` weigert een
+  lag van nul met een foutmelding, want handelen op een slotkoers die je nog
+  niet kent is look-ahead bias. Een test laat de omvang zien: een perfect
+  vooruitziend signaal haalt een Sharpe boven 10 zonder lag en 0,0 met lag.
+- **Kosten zijn expliciet**: commissie, halve spread en slippage, bewust
+  conservatief gezet (1 bp per transactie, hoger dan een institutionele partij
+  betaalt).
+- **Sharpe-significantie staat bij elke Sharpe.** Over 12 jaar is de
+  standaardfout 0,289, dus alles onder 0,57 is niet van nul te onderscheiden —
+  een getal dat in de meeste backtests ontbreekt.
+
+**Resultaat:** bruto Sharpe **−0,001**, netto **−0,163** bij een omzet van 181×
+per jaar. De placebo (posities door de tijd geschud, 200 runs) plaatst het
+echte resultaat op het 39e percentiel. Het signaal levert exact niets op, wat
+fase 3 al voorspelde.
+
 ### Fase 4 — Monte Carlo en margebehoefte
 
 Drie modellen, elk onderbouwd met een eerdere meting:
@@ -195,7 +216,7 @@ Elk van deze is nu gedekt door een regressietest.
 
 ## Kwaliteitsborging
 
-- **149 tests**, zonder netwerkafhankelijkheid (verzonnen dataframes, tijdelijke
+- **167 tests**, zonder netwerkafhankelijkheid (verzonnen dataframes, tijdelijke
   mappen)
 - **Positieve controles overal:** de walk-forward-validator moet een ingebouwd
   signaal *vinden* (R² out-of-sample > 0,5); de Kupiec-toets moet een verkeerd
@@ -236,6 +257,7 @@ python scripts/fase3_regressie.py         # fase 3: OLS, walk-forward, DM-toets
 python scripts/fase4_simulatie.py         # fase 4: Monte Carlo, VaR, ES
 python scripts/fase4_figuren.py           # fase 4: figuren en Kupiec-validatie
 python scripts/verken_vintage.py          # vintages, steekproefgrootte, placebo
+python scripts/pipeline.py                # volledige run met seed en manifest
 python -m pytest tests/ -q                # 139 tests
 ```
 
@@ -262,10 +284,13 @@ src/goldmodel/
   margin.py          margeboekhouding en bufferberekening
   models.py          OLS/Newey-West, walk-forward, Diebold-Mariano
   simulate.py        Monte Carlo, GARCH, VaR/ES, Kupiec
+  signal.py          voorspelling naar positie
+  backtest.py        positie naar rendement na kosten, met verplichte lag
+  placebo.py         placebo-runs en effectieve steekproefgrootte
   data/              FRED + ALFRED, Yahoo, Parquet-cache, loader
   viz/               figuren per analyselaag
 scripts/             één uitvoerbaar script per analysestap
-tests/               139 tests, inclusief positieve controles
+tests/               167 tests, inclusief positieve controles
 docs/                bevindingen per fase, begrippen, backlog
 output/figures/      23 figuren, 20 in de hoofdanalyse (gitignored)
 ```
@@ -279,6 +304,7 @@ output/figures/      23 figuren, 20 in de hoofdanalyse (gitignored)
 | [fase3_resultaat.md](docs/fase3_resultaat.md) | regressie en walk-forward validatie |
 | [fase4_resultaat.md](docs/fase4_resultaat.md) | simulatie, VaR, Kupiec, het antwoord |
 | [r2_uitgelegd.md](docs/r2_uitgelegd.md) | waarom R² 18,6%, 1,7% en −0,04 is |
+| [de_claim.md](docs/de_claim.md) | **wat ik wel en niet claim, en het staartrisico** |
 | [drie_kritische_vragen.md](docs/drie_kritische_vragen.md) | vintages, steekproefgrootte, placebo |
 | [vintage_data.md](docs/vintage_data.md) | revisies, ALFRED, look-ahead bias |
 | [begrippen.md](docs/begrippen.md) | elk statistisch begrip, met verwijzingen |

@@ -61,3 +61,4 @@ htmlcov/
 Thumbs.db
 desktop.ini
 ehthumbs.db
+output/runs/
