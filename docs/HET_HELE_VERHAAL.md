@@ -256,7 +256,7 @@ signaal; op kwartaalbasis mogelijk wel, maar te weinig data.**
 | 1 | Datalaag + verdelingsanalyse | **klaar** |
 | 2 | Stationariteit, correlaties, stabiliteit | **klaar** |
 | 3 | Regressie + walk-forward validatie | **klaar** |
-| 4 | Monte Carlo, VaR, margebehoefte | volgt |
+| 4 | Monte Carlo, VaR, margebehoefte | **klaar** |
 
 ### De rode draad, in één tabel
 
@@ -279,7 +279,48 @@ Dat is precies het deel dat wél voorspelbaar is.
 
 ---
 
-## 7. Wat fase 4 gaat doen
+## 7. Fase 4 — het antwoord
+
+Volledig in [fase4_resultaat.md](fase4_resultaat.md). De kern:
+
+**Waarom simuleren mag na fase 3:** een simulatie voorspelt de richting ook
+niet. Elk pad is toeval. We gebruiken alleen de *grootte*, en die is
+voorspelbaar.
+
+**Drie modellen, elk onderbouwd met een eerdere meting:**
+
+| Model | 99%-buffer (kwartaal) |
+|---|---|
+| GBM normaal | 26,0% |
+| GBM t (df 3,5) | 26,4% |
+| **GARCH t** | **34,5%** |
+
+**De eerlijkheidscheck** — simulatie naast de werkelijke historie:
+
+| Bron | p99 | Afwijking |
+|---|---|---|
+| historisch | 29,3% | — |
+| constante volatiliteit | 26% | −3 pp |
+| GARCH | 34,5% | +5 pp |
+
+De constante modellen onderschatten de staart, GARCH overschat hem. Oorzaak:
+persistentie van 0,9956 is bijna niet-stationair, waardoor GARCH de
+langetermijnvolatiliteit op 20,8% schat waar de data 18,3% zegt.
+
+**De Kupiec-validatie:** alle drie halen de toets, maar GARCH is het best
+gekalibreerd — op de scherpste toets (495 vensters) precies 5 overschrijdingen
+tegen 5 verwacht, tegenover 9 voor het normale model.
+
+**Het antwoord:** 34,5% van de notionele waarde voor 99% zekerheid over een
+kwartaal, met 26% als ondergrens. Je 5%-regel dekt 44% van de paden, 10% dekt
+69%.
+
+**Maar:** het is een liquiditeitsbehoefte, geen verlies. Bij een hedge stijgt je
+fysieke goud evenveel. Een kredietlijn doet hetzelfde werk als cash.
+
+---
+
+## 8. Wat de oorspronkelijke opzet van fase 4 was
 
 Drie stappen, elk onderbouwd met een bevinding uit fase 1–3:
 
@@ -312,7 +353,7 @@ verdedigen:
 
 ---
 
-## 8. Wat je hiervan leert (los van goud)
+## 9. Wat je hiervan leert (los van goud)
 
 Dit is het deel dat overdraagbaar is naar elk ander kwantitatief project.
 
@@ -350,7 +391,7 @@ niet kunt uitleggen, is dat niet.
 
 ---
 
-## 9. Alles draaien
+## 10. Alles draaien
 
 ```powershell
 python scripts/check_setup.py           # werkt alles?

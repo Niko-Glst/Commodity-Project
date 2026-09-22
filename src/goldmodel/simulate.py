@@ -119,6 +119,11 @@ class PathStatistics:
     max_adverse: np.ndarray
     model_name: str
     settings: SimulationSettings
+    # Een steekproef van de cumulatieve paden, voor de fan chart. We bewaren
+    # niet alle paden: bij 20.000 paden x 64 dagen is dat onnodig veel
+    # geheugen voor een figuur die maar een paar honderd lijnen toont.
+    path_sample: np.ndarray | None = None
+    percentile_bands: dict[str, np.ndarray] = field(default_factory=dict)
 
     def percentiles(self, levels: tuple[float, ...] = (50, 90, 95, 99, 99.9)) -> pd.DataFrame:
         """Percentielen van de eindwaarde en van de tussentijdse tegenbeweging."""
@@ -159,6 +164,23 @@ class PathStatistics:
         if beyond.size == 0:
             return threshold
         return float(beyond.mean())
+
+
+def _summarise_paths(
+    cumulative: np.ndarray, *, n_sample: int = 200
+) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+    """Bewaart een steekproef van de paden plus de percentielband per dag.
+
+    De fan chart heeft twee dingen nodig: een paar honderd individuele paden
+    om de spreiding te laten zien, en de percentielen per dag om de band te
+    tekenen. Alle paden bewaren is zonde van het geheugen.
+    """
+    sample = cumulative[: min(n_sample, cumulative.shape[0])]
+    bands = {
+        f"p{level:g}": np.percentile(cumulative, level, axis=0)
+        for level in (1, 5, 25, 50, 75, 95, 99)
+    }
+    return sample, bands
 
 
 def _effective_drift(daily_mean: float, settings: SimulationSettings) -> float:
@@ -220,11 +242,14 @@ def simulate_gbm_normal(
         [np.zeros((settings.n_paths, 1)), np.cumsum(daily_returns, axis=1)], axis=1
     )
 
+    sample, bands = _summarise_paths(cumulative)
     return PathStatistics(
         final_returns=np.expm1(cumulative[:, -1]),
         max_adverse=_adverse_excursion(cumulative, is_short=settings.is_short),
         model_name="GBM normaal",
         settings=settings,
+        path_sample=sample,
+        percentile_bands=bands,
     )
 
 
@@ -268,11 +293,14 @@ def simulate_gbm_student_t(
         [np.zeros((settings.n_paths, 1)), np.cumsum(daily_returns, axis=1)], axis=1
     )
 
+    sample, bands = _summarise_paths(cumulative)
     return PathStatistics(
         final_returns=np.expm1(cumulative[:, -1]),
         max_adverse=_adverse_excursion(cumulative, is_short=settings.is_short),
         model_name=f"GBM t (df={degrees_of_freedom:.1f})",
         settings=settings,
+        path_sample=sample,
+        percentile_bands=bands,
     )
 
 
@@ -434,11 +462,14 @@ def simulate_garch(
             + parameters.beta * variance
         )
 
+    sample, bands = _summarise_paths(cumulative)
     return PathStatistics(
         final_returns=np.expm1(cumulative[:, -1]),
         max_adverse=_adverse_excursion(cumulative, is_short=settings.is_short),
         model_name=f"GARCH t (df={degrees_of_freedom:.1f})",
         settings=settings,
+        path_sample=sample,
+        percentile_bands=bands,
     )
 
 

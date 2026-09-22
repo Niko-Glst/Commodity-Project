@@ -4,7 +4,7 @@ Een kwantitatief onderzoeksproject naar de relatie tussen de goudprijs en
 macro-economische variabelen, met een Monte Carlo-simulatie voor het
 inschatten van margeverplichtingen op futures-posities.
 
-**Status:** fase 1, 2 en 3 afgerond; fase 4 (Monte Carlo) volgt.
+**Status:** alle vier de fases afgerond.
 
 > **Even het overzicht kwijt?** Begin bij
 > **[docs/HET_HELE_VERHAAL.md](docs/HET_HELE_VERHAAL.md)** — van nul tot nu,
@@ -57,7 +57,7 @@ hij is, en onder welke marktomstandigheden.
 | 1 | Data | FRED + yfinance ophalen, cachen, vintage-vraag | **klaar** |
 | 2 | Verkenning | Stationariteit, ACF/PACF, correlatiestabiliteit, staarten | **klaar** |
 | 3 | Regressie | OLS met Newey-West, ridge, walk-forward | **klaar** |
-| 4 | Simulatie | GBM → t-schokken → GARCH, VaR/ES, margebehoefte | volgt |
+| 4 | Simulatie | GBM → t-schokken → GARCH, VaR/ES, margebehoefte | **klaar** |
 
 De validatielaag (walk-forward backtesting, benchmarkvergelijking, Kupiec-toets)
 loopt dwars door fase 3 en 4 heen en wordt niet achteraf toegevoegd.
@@ -117,6 +117,9 @@ python scripts/uitleg_adf_kpss.py        # fase 2 vanaf nul uitgelegd
 python scripts/fase2_stationariteit.py   # fase 2: ADF/KPSS + schijnregressie
 python scripts/fase2_correlaties.py      # fase 2: correlaties en stabiliteit
 python scripts/fase3_regressie.py        # fase 3: OLS + walk-forward validatie
+python scripts/fase4_simulatie.py        # fase 4: Monte Carlo en de margevraag
+python scripts/fase4_figuren.py          # fase 4: figuren + Kupiec-validatie
+python scripts/uitleg_r2.py              # R2 vanaf nul uitgelegd
 python scripts/uitleg_marge.py           # margemechaniek dag voor dag
 python scripts/zelftoets.py              # zes vragen met uitleg bij elk antwoord
 ```
@@ -138,6 +141,7 @@ tijdelijke cachemap.
 ├── src/goldmodel/
 │   ├── config.py              # reeksdefinities + economische motivatie
 │   ├── margin.py              # margeboekhouding en bufferberekening
+│   ├── simulate.py            # Monte Carlo, GARCH, VaR/ES, Kupiec
 │   ├── models.py              # regressie, walk-forward, Diebold-Mariano
 │   ├── data/
 │   │   ├── cache.py           # Parquet-cache met TTL en stale-fallback
@@ -151,6 +155,7 @@ tijdelijke cachemap.
 │       ├── correlations.py    # correlaties en rolling stabiliteit
 │       ├── explain.py         # uitlegfiguren (QQ, t-verdeling, marge)
 │       ├── spectral.py        # spectraalanalyse (gevorderd)
+│       ├── simulation.py      # fan charts, buffercurve, validatie
 │       └── stationarity.py    # stationariteit en schijnregressie
 ├── scripts/
 │   ├── analyse_cycles.py      # spectraalanalyse van de volatiliteit
@@ -162,6 +167,9 @@ tijdelijke cachemap.
 │   ├── fase2_stationariteit.py # ADF/KPSS + schijnregressie
 │   ├── fase2_correlaties.py   # correlaties, stabiliteit, multicollineariteit
 │   ├── fase3_regressie.py     # OLS met Newey-West + walk-forward
+│   ├── fase4_simulatie.py     # Monte Carlo en de margevraag
+│   ├── fase4_figuren.py       # figuren + Kupiec-validatie
+│   ├── uitleg_r2.py           # R2 vanaf nul uitgelegd
 │   ├── verken_crack_spread.py # backlog-verkenning: crack spread als olie-leg
 │   ├── uitleg_adf_kpss.py     # dezelfde stof, vanaf nul
 │   └── zelftoets.py           # zes vragen over de bevindingen
@@ -171,6 +179,7 @@ tijdelijke cachemap.
 │   ├── test_correlations.py
 │   ├── test_episodes.py
 │   ├── test_models.py
+│   ├── test_simulate.py
 │   ├── test_stationarity.py
 │   ├── test_spectral.py
 │   └── test_viz.py
@@ -183,6 +192,8 @@ tijdelijke cachemap.
 │   ├── fase2.md               # stationariteit en schijnregressie (technisch)
 │   ├── fase2_resultaat.md     # de zes bevindingen van fase 2
 │   ├── fase3_resultaat.md     # verslaat een model een random walk?
+│   ├── fase4_resultaat.md     # het antwoord op de margevraag
+│   ├── r2_uitgelegd.md        # wat R2 is en waarom hij verandert
 │   ├── HET_HELE_VERHAAL.md    # van nul tot nu, in één document
 │   ├── uitleg_datalaag.md     # hoe de code werkt, stap voor stap
 │   ├── begrippen.md           # elk statistisch begrip uitgelegd + links
