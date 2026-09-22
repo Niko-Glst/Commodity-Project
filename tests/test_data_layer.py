@@ -17,7 +17,13 @@ import pytest
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from goldmodel.config import ALL_SERIES, RevisionBehaviour, Source, core_series
+from goldmodel.config import (
+    ALL_SERIES,
+    RevisionBehaviour,
+    Source,
+    core_series,
+    series_by_name,
+)
 from goldmodel.data.cache import ParquetCache
 from goldmodel.data.fred_client import as_known_on
 from goldmodel.data.loader import DataLoader, LoadReport, LoadResult, LoadStatus
@@ -270,11 +276,36 @@ def test_every_series_documents_its_rationale() -> None:
 
 
 def test_market_series_are_marked_never_revised() -> None:
-    """Dagelijkse marktnoteringen horen als niet-gereviseerd gemarkeerd."""
-    market_codes = {"DFII10", "DTWEXBGS", "T10YIE", "DFF", "T10Y2Y", "BAMLH0A0HYM2"}
+    """Rentenoteringen zijn niet-gereviseerd; de dollarindex WEL.
+
+    Deze test is aangepast nadat een ALFRED-meting de oorspronkelijke aanname
+    weerlegde. Van DTWEXBGS bleken 249 van de 261 observaties uit 2015 een
+    andere waarde te hebben in een latere vintage — de Fed heeft de index in
+    maart 2019 herbaseerd.
+
+    Rentes en spreads zijn wél zuivere marktnoteringen: die liggen vast zodra
+    de markt sluit. Het onderscheid loopt dus niet langs "marktnotering of
+    niet" maar langs "kan het niveau opnieuw vastgesteld worden".
+    """
+    never_revised = {"DFII10", "T10YIE", "DFF", "T10Y2Y", "BAMLH0A0HYM2"}
     for spec in ALL_SERIES:
-        if spec.code in market_codes:
-            assert spec.revision is RevisionBehaviour.NEVER_REVISED
+        if spec.code in never_revised:
+            assert spec.revision is RevisionBehaviour.NEVER_REVISED, (
+                f"{spec.code} is een rentenotering en wordt niet herzien"
+            )
+
+
+def test_dollar_index_is_marked_as_revised() -> None:
+    """De dollarindex staat als herzien gemarkeerd, met de meting erbij.
+
+    Legt de correctie vast zodat niemand hem terugdraait zonder opnieuw te
+    meten. De herbasering valt op log-rendementen grotendeels weg, maar
+    "valt weg" is iets anders dan "gebeurt niet".
+    """
+    spec = series_by_name("usd_broad_index")
+
+    assert spec.revision is not RevisionBehaviour.NEVER_REVISED
+    assert spec.revision is RevisionBehaviour.REVISED_MILD
 
 
 def test_core_series_excludes_optional() -> None:

@@ -172,9 +172,22 @@ FRED_SERIES: tuple[SeriesSpec, ...] = (
             "niet volledig als causaal 'signaal' mag worden gelezen."
         ),
         expected_sign="-",
-        revision=RevisionBehaviour.NEVER_REVISED,
+        # GEMETEN, niet aangenomen. Met ALFRED nagegaan over 2015: van de 261
+        # observaties hebben er 249 een andere waarde in een latere vintage,
+        # met een gemiddelde afwijking van 1,36% — ruim vier keer de dagelijkse
+        # volatiliteit van 0,3%.
+        #
+        # De oorzaak is geen statistische bijstelling maar een HERBASERING: de
+        # Fed heeft deze index op 4 maart 2019 opnieuw geïndexeerd. Dat
+        # verschuift het hele niveau. Voor een model op LOG-RENDEMENTEN valt
+        # een herbasering grotendeels weg (een constante factor verdwijnt bij
+        # differentiëren), maar de reeks is daarmee niet "nooit herzien", en
+        # dat stond hier eerst wel.
+        #
+        # Zie scripts/verken_vintage.py voor de meting.
+        revision=RevisionBehaviour.REVISED_MILD,
         publication_lag_days=1,
-        units="index (jan 2006 = 100)",
+        units="index (jan 2006 = 100, herbaseerd in 2019)",
         transform_hint="log-rendement",
     ),
     SeriesSpec(

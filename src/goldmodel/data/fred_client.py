@@ -217,7 +217,27 @@ class FredClient:
         if end_date:
             params["observation_end"] = end_date
 
-        data = self._request(params)
+        try:
+            data = self._request(params)
+        except FredDataError as error:
+            # FRED weigert een verzoek als er te veel vintage-datums in het
+            # gevraagde venster vallen. Bij een DAGELIJKSE reeks is dat snel
+            # het geval: elke werkdag levert een nieuwe vintage op, dus een
+            # paar jaar historie loopt al tegen de limiet aan.
+            #
+            # Dat is geen randgeval maar de normale situatie voor de
+            # kernreeksen van dit project. We vertalen het naar een
+            # begrijpelijke fout in plaats van een rauwe HTTP 400.
+            if "vintage dates" in str(error):
+                raise FredDataError(
+                    f"ALFRED weigert het volledige vintage-panel voor {code!r}: "
+                    "het gevraagde venster bevat te veel vintage-datums. "
+                    "Beperk de periode met start_date/end_date, of gebruik "
+                    "fetch_as_known_on() voor een enkele peildatum — dat is "
+                    "wat een backtest nodig heeft."
+                ) from error
+            raise
+
         observations = data.get("observations", [])
         if not observations:
             raise FredDataError(f"ALFRED gaf geen observaties terug voor {code!r}.")
@@ -227,6 +247,88 @@ class FredClient:
             frame[col] = pd.to_datetime(frame[col], errors="coerce")
         frame["value"] = pd.to_numeric(frame["value"], errors="coerce")
         return frame.sort_values(["date", "realtime_start"]).reset_index(drop=True)
+
+
+    def fetch_as_known_on(
+        self,
+        code: str,
+        known_on: str | pd.Timestamp,
+        *,
+        start_date: str,
+        end_date: str | None = None,
+    ) -> pd.DataFrame:
+        """Haalt de reeks op zoals die op één peildatum gepubliceerd was.
+
+        Dit is de functie die een backtest nodig heeft, en de praktische
+        tegenhanger van ``fetch_vintage_series``: in plaats van het hele
+        vintage-panel vraagt hij ALFRED om één momentopname.
+
+        Waarom dat belangrijk is: het volledige panel van een dagelijkse
+        reeks overschrijdt de limiet van FRED op het aantal vintage-datums.
+        Per peildatum ophalen blijft daar ruim onder, en het is precies wat
+        je op elk voorspelmoment wilt weten.
+
+        Argumenten:
+            code: FRED-reekscode.
+            known_on: De datum waarop je 'staat' in de backtest. ALFRED geeft
+                de waarden terug zoals ze op die dag gepubliceerd waren.
+            start_date: Vroegste observatiedatum.
+            end_date: Laatste observatiedatum; None betekent tot ``known_on``.
+
+        Geeft terug:
+            Dataframe met DatetimeIndex ``date`` en kolom ``value``, met
+            alleen wat op ``known_on`` bekend was. Observaties die toen nog
+            niet gepubliceerd waren, ontbreken — en dat hoort zo.
+        """
+        as_of = pd.Timestamp(known_on).strftime("%Y-%m-%d")
+        params: dict[str, Any] = {
+            "series_id": code,
+            "observation_start": start_date,
+            "observation_end": end_date or as_of,
+            # Beide gelijk: geef de stand van zaken op exact deze dag.
+            "realtime_start": as_of,
+            "realtime_end": as_of,
+        }
+
+        data = self._request(params)
+        observations = data.get("observations", [])
+        if not observations:
+            raise FredDataError(
+                f"ALFRED gaf geen observaties terug voor {code!r} op {as_of}."
+            )
+
+        frame = pd.DataFrame(observations)
+        frame["date"] = pd.to_datetime(frame["date"])
+        frame["value"] = pd.to_numeric(frame["value"], errors="coerce")
+        result = frame.set_index("date")[["value"]].sort_index()
+        result.index.name = "date"
+        return result
+
+    def count_revisions(
+        self, code: str, *, start_date: str, end_date: str
+    ) -> dict:
+        """Telt hoe vaak een reeks in een periode herzien is.
+
+        Beantwoordt de vraag die de hele vintage-discussie beslist: wordt
+        deze reeks eigenlijk wel herzien? Voor marktnoteringen is het
+        antwoord nee, en dan is werken met de huidige reeks verdedigbaar.
+
+        Houd de periode kort (een jaar of minder), anders loopt het verzoek
+        tegen de vintage-limiet van FRED aan.
+        """
+        vintages = self.fetch_vintage_series(
+            code, start_date=start_date, end_date=end_date
+        )
+        per_observation = vintages.groupby("date").size()
+        revised = per_observation[per_observation > 1]
+
+        return {
+            "code": code,
+            "n_observations": int(len(per_observation)),
+            "n_records": int(len(vintages)),
+            "n_revised": int(len(revised)),
+            "share_revised": float(len(revised) / max(len(per_observation), 1)),
+        }
 
 
 def as_known_on(vintage_frame: pd.DataFrame, known_on: str | pd.Timestamp) -> pd.DataFrame:

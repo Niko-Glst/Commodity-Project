@@ -72,10 +72,13 @@ margeberekening heeft alleen het tweede nodig.
   teken** in [`config.py`](src/goldmodel/config.py) — een discipline tegen
   achteraf-rationalisatie
 - Parquet-cache met TTL, stale-fallback en graceful degradation per reeks
-- Revisiegedrag per reeks geclassificeerd; ALFRED vintage-ophaling geïmplementeerd
-  voor reeksen die *wel* worden herzien
-- Publicatievertraging per reeks vastgelegd (FRED publiceert dag *t* op werkdag
-  *t+1*) en toegepast bij het bouwen van de modelmatrix
+- Revisiegedrag per reeks geclassificeerd en **geverifieerd met ALFRED**: de
+  brede dollarindex *wordt* herzien (gemiddeld 1,4%, door een herbasering in
+  2019), wat op log-rendementen grotendeels wegvalt maar de oorspronkelijke
+  claim "nooit herzien" weerlegde
+- **De analyses draaien op de herziene reeks, niet op point-in-time vintages.**
+  `fetch_as_known_on()` is geïmplementeerd maar nog niet aangesloten op de
+  walk-forward — een benoemde beperking, geen aanname
 
 ### Fase 2 — Stationariteit en stabiliteit van verbanden
 
@@ -178,6 +181,8 @@ Gedocumenteerd, omdat ze vinden precies is waar de validatielaag voor is.
 
 | Fout | Gevolg | Hoe het bovenkwam |
 |---|---|---|
+| Beweerd dat de kernreeksen nooit herzien worden | Ongefundeerde point-in-time-claim | ALFRED toont dat 249 van 261 observaties van de dollarindex herzien zijn |
+| `fetch_vintage_series` had nooit tegen de API gedraaid | Een "geteste" functie die faalde op echte data | FRED weigert verzoeken boven zijn limiet op vintage-datums |
 | Alle margestortingen opgeteld in plaats van de piek netto-inleg | Kwartaalbuffer ongeveer 5 pp te hoog | Het nettoverlies was niet gelijk aan de prijsbeweging |
 | De gelijktijdige R² van 18,6% gerapporteerd als bruikbaar | Voorspelbaarheid factor 11 overschat | Drivers lagen liet hem naar 1,7% zakken |
 | Beweerd dat Kupiec het normale model verwierp (p=0,045) | Onjuiste bevinding | De p-waarde flipte met het toevalszaad — Monte Carlo-ruis, geen bewijs |
@@ -190,7 +195,7 @@ Elk van deze is nu gedekt door een regressietest.
 
 ## Kwaliteitsborging
 
-- **139 tests**, zonder netwerkafhankelijkheid (verzonnen dataframes, tijdelijke
+- **149 tests**, zonder netwerkafhankelijkheid (verzonnen dataframes, tijdelijke
   mappen)
 - **Positieve controles overal:** de walk-forward-validator moet een ingebouwd
   signaal *vinden* (R² out-of-sample > 0,5); de Kupiec-toets moet een verkeerd
@@ -198,6 +203,10 @@ Elk van deze is nu gedekt door een regressietest.
   gevonden" niets.
 - **Look-ahead-bewaking:** een test vervangt alle data na dag 1.500 door onzin en
   controleert dat eerdere voorspellingen bit-identiek blijven.
+- **Placebo-runs:** de drivers vervangen door toevalsreeksen met dezelfde
+  persistentie geeft een foutenpercentage van 5,0% tegen een nominale 5% — de
+  opzet is correct gekalibreerd. De echte R² van 0,186 overtreft alle 200
+  placeboruns (maximum 0,003).
 - Vaste toevalszaden, zodat elk gerapporteerd getal reproduceerbaar is.
 
 ---
@@ -226,6 +235,7 @@ python scripts/fase2_correlaties.py       # fase 2: correlaties en stabiliteit
 python scripts/fase3_regressie.py         # fase 3: OLS, walk-forward, DM-toets
 python scripts/fase4_simulatie.py         # fase 4: Monte Carlo, VaR, ES
 python scripts/fase4_figuren.py           # fase 4: figuren en Kupiec-validatie
+python scripts/verken_vintage.py          # vintages, steekproefgrootte, placebo
 python -m pytest tests/ -q                # 139 tests
 ```
 
@@ -269,6 +279,7 @@ output/figures/      23 figuren, 20 in de hoofdanalyse (gitignored)
 | [fase3_resultaat.md](docs/fase3_resultaat.md) | regressie en walk-forward validatie |
 | [fase4_resultaat.md](docs/fase4_resultaat.md) | simulatie, VaR, Kupiec, het antwoord |
 | [r2_uitgelegd.md](docs/r2_uitgelegd.md) | waarom R² 18,6%, 1,7% en −0,04 is |
+| [drie_kritische_vragen.md](docs/drie_kritische_vragen.md) | vintages, steekproefgrootte, placebo |
 | [vintage_data.md](docs/vintage_data.md) | revisies, ALFRED, look-ahead bias |
 | [begrippen.md](docs/begrippen.md) | elk statistisch begrip, met verwijzingen |
 | [backlog/](docs/backlog/README.md) | voorstellen met de reden waarom ze wachten |
@@ -279,21 +290,26 @@ output/figures/      23 figuren, 20 in de hoofdanalyse (gitignored)
 
 Expliciet benoemd in plaats van aan de lezer gelaten.
 
-1. **De Kupiec-toets is zwak bij deze steekproefgrootte.** Zelfs bij 495
+1. **De effectieve steekproef is veel kleiner dan de nominale.** 5.957
+   handelsdagen, maar slechts **94 niet-overlappende kwartalen** — en de
+   gerealiseerde volatiliteit, wat fase 4 modelleert, heeft na correctie voor
+   autocorrelatie een effectieve steekproefgrootte van ongeveer **42**. De
+   GARCH-parameters rusten daarop.
+2. **Geen point-in-time data.** De analyses gebruiken de herziene reeks. Het
+   gemeten effect op de dollarindex is 1,4%, wat op log-rendementen grotendeels
+   wegvalt, maar dit is geen point-in-time backtest.
+3. **De Kupiec-toets is zwak bij deze steekproefgrootte.** Zelfs bij 495
    vensters verwacht je maar 5 overschrijdingen; het verschil tussen 5 en 9 is
-   statistisch niet te scheiden. De modellen echt onderscheiden zou meer dan 23
-   jaar data vragen.
-2. **GARCH-persistentie van 0,9956 is bijna niet-stationair.** De
+   statistisch niet te scheiden.
+4. **GARCH-persistentie van 0,9956 is bijna niet-stationair.** De
    langetermijnvariantie is daardoor slecht bepaald, en dat is waarom GARCH de
    kwartaalstaart met ongeveer 5 pp overschat.
-3. **Differentiëren gooit niveau-informatie weg.** Het arbitrage-argument over de
+5. **Differentiëren gooit niveau-informatie weg.** Het arbitrage-argument over de
    reële rente gaat over niveaus; cointegratie zou dat opvangen en is niet
    geïmplementeerd. Gedocumenteerd in de backlog.
-4. **Continue front-month futures bevatten roll-effecten.** Klein bij goud
+6. **Continue front-month futures bevatten roll-effecten.** Klein bij goud
    (vlakke forwardcurve) maar aanwezig.
-5. **Weinig backtest-vensters op kwartaalhorizon** (78 niet-overlappend) — een
-   onvermijdelijk gevolg van 23 jaar data op die horizon.
-6. **Instabiele coëfficiënten worden gerapporteerd, niet opgelost.** Vier van de
+7. **Instabiele coëfficiënten worden gerapporteerd, niet opgelost.** Vier van de
    vijf drivers wisselen van teken door de tijd; een regime-switching model is de
    logische vervolgstap en staat in de backlog.
 

@@ -71,10 +71,13 @@ calculation only requires the second.
   sign** in [`config.py`](src/goldmodel/config.py) — a discipline against
   post-hoc rationalisation
 - Parquet cache with TTL, stale fallback, and per-series graceful degradation
-- Revision behaviour classified per series; ALFRED vintage retrieval implemented
-  for series that *are* revised
-- Publication lag recorded per series (FRED publishes day *t* on business day
-  *t+1*) and applied when building the model matrix
+- Revision behaviour classified per series and **verified against ALFRED**: the
+  broad dollar index *is* revised (1.4% average, from a 2019 rebasing), which
+  largely cancels in log returns but disproved the original "never revised"
+  claim
+- **Analyses run on the revised series, not point-in-time vintages.**
+  `fetch_as_known_on()` is implemented but not yet wired into the walk-forward —
+  a stated limitation, not an assumption
 
 ### Phase 2 — Stationarity and relationship stability
 
@@ -173,6 +176,8 @@ Documented because finding them is what the validation layer is for.
 
 | Error | Impact | How it surfaced |
 |---|---|---|
+| Claimed core series are never revised | Unfounded point-in-time claim | ALFRED shows 249 of 261 dollar-index observations were revised |
+| `fetch_vintage_series` had never run against the API | A "tested" function that failed on real data | FRED rejects requests exceeding its vintage-date limit |
 | Summed all margin deposits instead of the peak net outlay | Overstated quarterly buffer by ~5 pp | Net loss did not equal the price move |
 | Reported the contemporaneous R² of 18.6% as if usable | Overstated predictability by a factor of 11 | Lagging the drivers dropped it to 1.7% |
 | Claimed Kupiec rejected the normal model (p=0.045) | False finding | The p-value flipped with the random seed — Monte Carlo noise, not evidence |
@@ -185,12 +190,16 @@ Each is now covered by a regression test.
 
 ## Quality assurance
 
-- **139 tests**, no network dependency (synthetic frames, temporary directories)
+- **149 tests**, no network dependency (synthetic frames, temporary directories)
 - **Positive controls throughout:** the walk-forward validator must *find* a
   planted signal (out-of-sample R² > 0.5); the Kupiec test must *reject* a
   miscalibrated model. Without these, "no signal found" carries no information.
 - **Look-ahead guard:** a test replaces all data after day 1,500 with nonsense
   and asserts that earlier predictions are bit-identical.
+- **Placebo runs:** replacing the drivers with persistence-matched random series
+  yields a 5.0% false-positive rate against a nominal 5% — the design is
+  correctly calibrated. The real R² of 0.186 exceeds all 200 placebo runs (max
+  0.003).
 - Fixed random seeds, so every reported figure is reproducible.
 
 ---
@@ -219,6 +228,7 @@ python scripts/fase2_correlaties.py       # Phase 2: correlations and stability
 python scripts/fase3_regressie.py         # Phase 3: OLS, walk-forward, DM test
 python scripts/fase4_simulatie.py         # Phase 4: Monte Carlo, VaR, ES
 python scripts/fase4_figuren.py           # Phase 4: figures and Kupiec validation
+python scripts/verken_vintage.py          # vintages, sample size, placebo runs
 python -m pytest tests/ -q                # 139 tests
 ```
 
@@ -262,6 +272,7 @@ output/figures/      23 figures, 20 in the main analysis (gitignored)
 | [fase3_resultaat.md](docs/fase3_resultaat.md) | regression and walk-forward validation |
 | [fase4_resultaat.md](docs/fase4_resultaat.md) | simulation, VaR, Kupiec, the answer |
 | [r2_uitgelegd.md](docs/r2_uitgelegd.md) | why R² is 18.6%, 1.7%, and −0.04 |
+| [drie_kritische_vragen.md](docs/drie_kritische_vragen.md) | vintages, sample size, placebo runs |
 | [vintage_data.md](docs/vintage_data.md) | revisions, ALFRED, look-ahead bias |
 | [begrippen.md](docs/begrippen.md) | every statistical concept, with references |
 | [backlog/](docs/backlog/README.md) | proposals with the reason they are deferred |
@@ -274,21 +285,26 @@ Documentation is written in Dutch; this README summarises the findings in Englis
 
 Stated explicitly rather than left for a reader to discover.
 
-1. **The Kupiec test is weak at this sample size.** Even with 495 windows you
+1. **Effective sample size is far below nominal.** 5,957 trading days, but only
+   **94 non-overlapping quarters** — and realised volatility, the quantity Phase
+   4 models, has an effective sample size of roughly **42** after correcting for
+   autocorrelation. The GARCH parameters rest on that.
+2. **No point-in-time data.** Analyses use the revised series. Measured impact
+   on the dollar index is 1.4%, which largely cancels in log returns, but this is
+   not a point-in-time backtest.
+3. **The Kupiec test is weak at this sample size.** Even with 495 windows you
    expect only 5 breaches; the difference between 5 and 9 is not statistically
-   separable. Properly distinguishing the models would require more than 23 years
-   of data.
-2. **GARCH persistence of 0.9956 is near-unit.** The long-run variance is
+   separable.
+4. **GARCH persistence of 0.9956 is near-unit.** The long-run variance is
    therefore poorly identified, which is why GARCH overstates the quarterly tail
    by roughly 5 pp.
-3. **Differencing discards level information.** The arbitrage argument for real
+5. **Differencing discards level information.** The arbitrage argument for real
    rates concerns levels; cointegration would address this and is not
    implemented. Documented in the backlog.
-4. **Continuous front-month futures contain roll effects.** Small for gold (flat
+6. **Continuous front-month futures contain roll effects.** Small for gold (flat
    forward curve) but present.
-5. **Few backtest windows at the quarterly horizon** (78 non-overlapping) — an
-   unavoidable consequence of 23 years of data at that horizon.
-6. **Unstable coefficients are reported, not solved.** Four of five drivers
+
+7. **Unstable coefficients are reported, not solved.** Four of five drivers
    change sign over time; a regime-switching model is the logical next step and
    sits in the backlog.
 
