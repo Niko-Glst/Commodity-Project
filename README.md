@@ -1,376 +1,300 @@
-# Goudprijsmodel — macro-drivers, regressie en Monte Carlo
+# Gold Price Risk Model
 
-Een kwantitatief onderzoeksproject naar de relatie tussen de goudprijs en
-macro-economische variabelen, met een Monte Carlo-simulatie voor het
-inschatten van margeverplichtingen op futures-posities.
+**Quantitative analysis of gold futures: macro drivers, forecast validation, and
+Monte Carlo margin sizing.**
 
-**Status:** alle vier de fases afgerond.
-
-> **Even het overzicht kwijt?** Begin bij
-> **[docs/HET_HELE_VERHAAL.md](docs/HET_HELE_VERHAAL.md)** — van nul tot nu,
-> één pagina: wat we bouwen, wat eruit kwam, en wat je eruit leert.
+*Nederlandse versie: [README.nl.md](README.nl.md)*
 
 ---
 
-## Wat dit project *niet* is
+## The question this answers
 
-Dit staat bovenaan omdat het belangrijker is dan wat het wel is.
+> I hold a short gold futures position as a hedge for one quarter. How much
+> liquidity must I keep available so that, with 99% confidence, I do not miss a
+> margin call?
 
-- **Geen handelsadvies en geen beleggingsaanbeveling.** Niets in deze
-  repository is bedoeld als grondslag voor een financiële beslissing.
-- **Geen puntvoorspelling van de goudprijs.** De simulatielaag produceert een
-  kansverdeling, geen getal. "Goud staat over drie maanden op $2.400" is een
-  uitspraak die dit project niet doet en niet kan doen.
-- **Geen bewijs dat goudprijzen voorspelbaar zijn.** Het uitgangspunt is het
-  tegendeel: financiële markten zijn grotendeels efficiënt en de nulhypothese
-  is dat een random walk niet te verslaan is. Als de validatie dat bevestigt,
-  is dat het resultaat van het project en zo wordt het gerapporteerd.
-- **Geen productiesysteem.** Het is een leer- en portfolioproject, gebouwd om
-  methodologie te demonstreren.
+An existing hedging tool answers this with a rule of thumb: **5–10% of notional**.
+This project replaces that with a number derived from data, together with an
+explicit statement of how uncertain that number is.
 
-Wat het wél is: een poging om een eerlijke, verdedigbare analyse te doen,
-waarbij elke methodologische keuze expliciet gemaakt en gemotiveerd wordt —
-inclusief de keuzes die het resultaat mínder indrukwekkend maken.
+**Headline result:** for a one-quarter horizon, 5% covers 44% of simulated paths
+and 10% covers 69%. Reaching 99% confidence requires roughly **26–34% of
+notional**, depending on the volatility model — and that range is itself the
+finding, not a defect.
 
 ---
 
-## De centrale vraag
+## What this project is *not*
 
-> Hoeveel liquiditeit moet ik aanhouden voor margeverplichtingen op een short
-> goudfutures-positie, zodat ik met 99% zekerheid geen margin call mis?
+This section comes first because it matters more than the results.
 
-Een bestaande hedging-tool beantwoordt die vraag nu met een vuistregel van
-5-10% van de notionele waarde. Dit project vervangt die vuistregel door een
-onderbouwde verdeling: simuleer duizenden prijspaden over een kwartaal, kijk
-naar de grootste tussentijdse tegenbeweging per pad, en lees het 99e
-percentiel af.
+- **Not trading advice.** Nothing here is a basis for a financial decision.
+- **Not a point forecast.** The simulation produces a probability distribution,
+  never a single predicted price.
+- **Not a claim that gold returns are predictable.** The null hypothesis was that
+  a random walk cannot be beaten. Phase 3 confirms it, and that is reported as
+  the result.
+- **Not a production system.** It is a learning and portfolio project built to
+  demonstrate methodology.
 
-De vuistregel is niet per se fout — het doel is om te kúnnen zeggen hoe fout
-hij is, en onder welke marktomstandigheden.
-
----
-
-## Opbouw in vier lagen
-
-| Fase | Laag | Inhoud | Status |
-|---|---|---|---|
-| 1 | Data | FRED + yfinance ophalen, cachen, vintage-vraag | **klaar** |
-| 2 | Verkenning | Stationariteit, ACF/PACF, correlatiestabiliteit, staarten | **klaar** |
-| 3 | Regressie | OLS met Newey-West, ridge, walk-forward | **klaar** |
-| 4 | Simulatie | GBM → t-schokken → GARCH, VaR/ES, margebehoefte | **klaar** |
-
-De validatielaag (walk-forward backtesting, benchmarkvergelijking, Kupiec-toets)
-loopt dwars door fase 3 en 4 heen en wordt niet achteraf toegevoegd.
+What it *is*: an honest, defensible analysis in which every methodological choice
+is made explicit and justified — including the choices that make the result
+*less* impressive.
 
 ---
 
-## Aan de slag
+## Headline findings
 
-### Installatie
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
-
-### FRED-sleutel
-
-Haal een gratis sleutel op bij
-[fredaccount.stlouisfed.org/apikeys](https://fredaccount.stlouisfed.org/apikeys),
-kopieer `.env.example` naar `.env` en vul hem in:
-
-```
-FRED_API_KEY=jouw_sleutel_hier
-```
-
-`.env` staat in `.gitignore` en mag nooit gecommit worden.
-
-### Controleer de installatie
-
-```powershell
-python scripts/check_setup.py
-```
-
-Dit controleert de Python-versie, de pakketten, je API-sleutel, beide
-verbindingen en de cache — en zegt per onderdeel wat je moet doen als er iets
-mis is.
-
-### Data ophalen
-
-```powershell
-python scripts/fetch_data.py              # cache-eerst, alle reeksen
-python scripts/fetch_data.py --refresh    # negeer de cache
-python scripts/fetch_data.py --core       # alleen de kernreeksen
-python scripts/fetch_data.py --cache-info # wat staat er in de cache?
-```
-
-Zonder FRED-sleutel draait het script gewoon door met alleen de
-yfinance-reeksen; het rapporteert per reeks wat er gelukt is. Dat is bewust:
-één onbereikbare bron mag een werksessie niet blokkeren.
-
-### Analyses draaien
-
-```powershell
-python scripts/plot_distributions.py     # fase 1: de zes verdelingsfiguren
-python scripts/uitleg_adf_kpss.py        # fase 2 vanaf nul uitgelegd
-python scripts/fase2_stationariteit.py   # fase 2: ADF/KPSS + schijnregressie
-python scripts/fase2_correlaties.py      # fase 2: correlaties en stabiliteit
-python scripts/fase3_regressie.py        # fase 3: OLS + walk-forward validatie
-python scripts/fase4_simulatie.py        # fase 4: Monte Carlo en de margevraag
-python scripts/fase4_figuren.py          # fase 4: figuren + Kupiec-validatie
-python scripts/uitleg_r2.py              # R2 vanaf nul uitgelegd
-python scripts/uitleg_marge.py           # margemechaniek dag voor dag
-python scripts/zelftoets.py              # zes vragen met uitleg bij elk antwoord
-```
-
-### Tests
-
-```powershell
-python -m pytest tests/ -q
-```
-
-De tests raken het netwerk niet — ze gebruiken verzonnen dataframes en een
-tijdelijke cachemap.
-
----
-
-## Structuur
-
-```
-├── src/goldmodel/
-│   ├── config.py              # reeksdefinities + economische motivatie
-│   ├── margin.py              # margeboekhouding en bufferberekening
-│   ├── simulate.py            # Monte Carlo, GARCH, VaR/ES, Kupiec
-│   ├── models.py              # regressie, walk-forward, Diebold-Mariano
-│   ├── data/
-│   │   ├── cache.py           # Parquet-cache met TTL en stale-fallback
-│   │   ├── fred_client.py     # FRED + ALFRED (vintage)
-│   │   ├── yahoo_client.py    # yfinance met normalisatie
-│   │   └── loader.py          # orkestratie, paneelopbouw
-│   └── viz/
-│       ├── style.py           # gedeelde opmaak en kleuren
-│       ├── distributions.py   # figuren over de verdeling
-│       ├── basics.py          # uitlegfiguren fase 1 -> fase 2
-│       ├── correlations.py    # correlaties en rolling stabiliteit
-│       ├── explain.py         # uitlegfiguren (QQ, t-verdeling, marge)
-│       ├── spectral.py        # spectraalanalyse (gevorderd)
-│       ├── simulation.py      # fan charts, buffercurve, validatie
-│       └── stationarity.py    # stationariteit en schijnregressie
-├── scripts/
-│   ├── analyse_cycles.py      # spectraalanalyse van de volatiliteit
-│   ├── check_setup.py         # controleert installatie en sleutels
-│   ├── fetch_data.py          # haalt op en toont basisstatistieken
-│   ├── plot_distributions.py  # maakt de zes figuren
-│   ├── uitleg_figuren.py      # figuren bij de drie vragen
-│   ├── uitleg_marge.py        # margemechaniek dag voor dag
-│   ├── fase2_stationariteit.py # ADF/KPSS + schijnregressie
-│   ├── fase2_correlaties.py   # correlaties, stabiliteit, multicollineariteit
-│   ├── fase3_regressie.py     # OLS met Newey-West + walk-forward
-│   ├── fase4_simulatie.py     # Monte Carlo en de margevraag
-│   ├── fase4_figuren.py       # figuren + Kupiec-validatie
-│   ├── uitleg_r2.py           # R2 vanaf nul uitgelegd
-│   ├── verken_crack_spread.py # backlog-verkenning: crack spread als olie-leg
-│   ├── uitleg_adf_kpss.py     # dezelfde stof, vanaf nul
-│   └── zelftoets.py           # zes vragen over de bevindingen
-├── tests/
-│   ├── test_data_layer.py
-│   ├── test_margin.py
-│   ├── test_correlations.py
-│   ├── test_episodes.py
-│   ├── test_models.py
-│   ├── test_simulate.py
-│   ├── test_stationarity.py
-│   ├── test_spectral.py
-│   └── test_viz.py
-├── docs/
-│   ├── START_HIER.md          # het project in vier bevindingen (begin hier)
-│   ├── drie_vragen.md         # marge-vuistregel, QQ-plot, t-verdeling
-│   ├── marge_uitgelegd.md     # margedynamiek en de 99%-grens
-│   ├── hoeveel_cash.md        # hoeveel buffer echt nodig is
-│   ├── adf_kpss_vanaf_nul.md  # wat fase 2 doet, vanaf nul uitgelegd
-│   ├── fase2.md               # stationariteit en schijnregressie (technisch)
-│   ├── fase2_resultaat.md     # de zes bevindingen van fase 2
-│   ├── fase3_resultaat.md     # verslaat een model een random walk?
-│   ├── fase4_resultaat.md     # het antwoord op de margevraag
-│   ├── r2_uitgelegd.md        # wat R2 is en waarom hij verandert
-│   ├── HET_HELE_VERHAAL.md    # van nul tot nu, in één document
-│   ├── uitleg_datalaag.md     # hoe de code werkt, stap voor stap
-│   ├── begrippen.md           # elk statistisch begrip uitgelegd + links
-│   ├── vintage_data.md        # revisies en look-ahead bias
-│   ├── backlog/               # voorstellen die nog niet ingebouwd zijn
-│   └── gevorderd/             # verdieping, geen hoofdpad
-├── output/figures/            # gitignored
-└── data/cache/                # gitignored
-```
-
-**Leeswijzer, in volgorde:**
-
-1. [HET_HELE_VERHAAL.md](docs/HET_HELE_VERHAAL.md) — van nul tot nu, begin hier
-2. [START_HIER.md](docs/START_HIER.md) — fase 1 in vier bevindingen
-3. [uitleg_datalaag.md](docs/uitleg_datalaag.md) — hoe de code werkt, zonder theorie
-4. [begrippen.md](docs/begrippen.md) — naslagwerk per begrip, met links
-5. `docs/gevorderd/` — verdieping, alleen als je er zin in hebt
-6. [`docs/backlog/`](docs/backlog/README.md) — ideeën met de reden waarom ze wachten
-
----
-
-## Gemaakte keuzes en waarom
-
-### Welke variabelen, en waarom die
-
-Elke reeks in [`config.py`](src/goldmodel/config.py) heeft een `rationale` van
-enkele zinnen en een `expected_sign`. Dat verwachte teken is vooraf
-opgeschreven — een discipline tegen achteraf-rationalisatie. Vindt het model
-het omgekeerde teken, dan is dat iets om te verklaren, niet om weg te redeneren.
-
-De belangrijkste driver is de **reële rente (DFII10)**, en die keuze rust op
-een arbitrage-argument in plaats van op een gevonden correlatie: goud betaalt
-geen rente, dus de kosten van het aanhouden ervan zijn precies de reële rente
-die je misloopt op een veilig alternatief. Dat is uit te leggen zonder naar
-data te verwijzen, wat het sterker maakt dan een empirisch verband.
-
-Twee dingen zijn expliciet als *probleem* gemarkeerd in de configuratie:
-
-- **T10YIE en DFII10 zijn definitorisch verbonden** (nominaal = reëel +
-  breakeven). Ze samen in één regressie levert multicollineariteit op. Daarom
-  kijken we in fase 3 naar VIF's en overwegen we regularisatie.
-- **DXY en DTWEXBGS meten allebei de dollar.** Ze zijn er als robuustheidscheck
-  op elkaar, niet als twee onafhankelijke drivers.
-
-### Parquet in plaats van SQLite
-
-We lezen vrijwel altijd hele reeksen in en werken daarna in pandas. Dan betaal
-je bij SQLite de complexiteit (schema's, connecties, SQL) zonder het voordeel
-te gebruiken. Parquet bewaart dtypes exact en `pd.read_parquet` geeft in één
-regel hetzelfde dataframe terug.
-
-Die keuze kan kantelen. Zodra we vintage-panels opslaan — elke observatiedatum
-× elke publicatiedatum — wordt de data veel groter en gaan we er wél selectief
-in filteren. Dat is een queryprobleem en daar wint SQLite. De cache-interface
-is daarom smal gehouden (`load`/`save`/`is_fresh`), zodat er later een
-SQLite-implementatie naast kan zonder de aanroepende code te raken.
-
-### Vintage data: gebouwd, bewust niet overal gebruikt
-
-Zie [`docs/vintage_data.md`](docs/vintage_data.md) voor de volledige
-behandeling. Samengevat:
-
-De kernreeksen zijn **dagelijkse marktnoteringen** — TIPS-rendementen,
-wisselkoersen, obligatiespreads. Die worden niet herzien: het TIPS-rendement
-van 3 maart 2020 was toen wat het nu is. Voor die reeksen levert huidige data
-geen vertekening in de waarden op, en is het vintage-panel ophalen alleen
-duurder en trager.
-
-Wat wél speelt, ook zonder revisies, is de **publicatievertraging**: FRED
-publiceert de waarde van dag *t* pas op werkdag *t+1*. Wie het goudrendement
-van dag *t* verklaart uit de rente van dag *t*, gebruikt een getal dat toen nog
-niet op FRED stond. Daarom heeft elke reeks een `publication_lag_days` die in
-fase 2 bij het bouwen van de modelmatrix wordt toegepast.
-
-De ALFRED-machinerie (`fetch_vintage_series`, `as_known_on`) is geïmplementeerd
-en getest, klaar voor het moment dat we een reeks als CPI toevoegen waar
-revisies wél substantieel zijn.
-
-### Gaten in het paneel worden niet opgevuld
-
-FRED-reeksen missen Amerikaanse feestdagen, Yahoo-reeksen het weekend, en de
-Fed-balans is wekelijks. Het paneel bevat dus NaN's, en de datalaag vult die
-niet op.
-
-Dat is opzettelijk. Forward-fill van een wekelijkse reeks naar dagelijkse
-frequentie creëert vijf identieke waarden op rij, en dus kunstmatige
-autocorrelatie. Die maakt de standaardfouten in een regressie te klein en de
-Durbin-Watson-statistiek onbruikbaar. Zo'n beslissing hoort zichtbaar in de
-modelleerlaag thuis, met de gevolgen erbij, niet stilzwijgend in de datalaag.
-
----
-
-## Eerste bevinding uit de data
-
-De datalaag levert al één resultaat op dat de rest van het project stuurt.
-Dagelijkse log-rendementen, 2003 tot heden (~5.900 handelsdagen):
-
-| Reeks | Scheefheid | Exces-kurtosis | Dagen >3σ | Verwacht onder normaal |
-|---|---|---|---|---|
-| Goud | −0,53 | 6,54 | 77 | 16 |
-| Zilver | −1,47 | 20,06 | 92 | 16 |
-| S&P 500 | −0,46 | 13,21 | 97 | 16 |
-| DXY | −0,05 | 1,82 | 66 | 16 |
-
-Extreme dagen komen vier tot zes keer zo vaak voor als een normale verdeling
-voorspelt, en Jarque-Bera verwerpt normaliteit met een p-waarde van praktisch
-nul. De negatieve scheefheid betekent bovendien dat de grote dalingen extremer
-zijn dan de grote stijgingen.
-
-Dit is geen verrassing — het is een van de best gedocumenteerde feiten in de
-financiële economie — maar het heeft directe gevolgen. Een Monte Carlo met
-normaal verdeelde schokken **onderschat het staartrisico systematisch**, en
-dat is precies het risico waar een margeberekening over gaat. De keuze voor
-t-verdeelde schokken en GARCH in fase 4 is daarmee onderbouwd met data uit dit
-project, in plaats van overgenomen als recept.
-
-### De figuren
-
-```powershell
-python scripts/plot_distributions.py
-```
-
-Zes figuren in `output/figures/`, elk met een uitleg in de terminal:
-
-| # | Figuur | Wat het laat zien |
+| # | Finding | Evidence |
 |---|---|---|
-| 1 | Verdeling tegenover normaal | Hogere piek, dikkere staarten, tekort in het middengebied |
-| 2 | Kurtosis uitgelegd | Waarom de vierde macht; **1% van de dagen levert 73% van de kurtosis** |
-| 3 | Scheefheid | Dalingen over stijgingen geklapt; de tien extreemste dagen |
-| 4 | QQ-plot | De klassieke S-curve tegen normaal, bijna recht tegen t |
-| 5 | Volatiliteitsclustering | Richting onvoorspelbaar, grootte wél — de basis voor GARCH |
-| 6 | Reeksen vergeleken | Dikke staarten zijn niet uniek voor goud |
+| 1 | Returns have fat tails | Excess kurtosis **6.05**; **79** days beyond 3σ where a normal distribution predicts **16** |
+| 2 | Losses are more extreme than gains | Skewness **−0.49** |
+| 3 | Volatility clusters and persists | GARCH persistence **0.9956**, half-life **156 days** |
+| 4 | There is no cycle in volatility | Spectral peak at 64 days explains **0.8%** of variance, fails out-of-sample |
+| 5 | Macro relationships are weak | Strongest single driver explains **16%** of daily variance |
+| 6 | Macro relationships are unstable | **4 of 5** drivers change sign over time (S&P 500: −0.33 to +0.43) |
+| 7 | Gold is not a daily safe haven | Gold–VIX correlation **−0.02** across the full period *and every sub-period*, including the 2020 crash |
+| 8 | Direction is not predictable | Out-of-sample R² **−0.04**; directional accuracy **43.8%** (below coin-flip) |
+| 9 | Magnitude *is* predictable | This is what the margin model exploits |
 
-Drie extra figuren over de cyclusvraag staan in `output/figures/gevorderd/`.
-
-### Onderzoeksvraag: zit er een cyclus in de volatiliteit?
-
-Rustige en onrustige periodes wisselen elkaar af — zit daar een vast ritme in?
-**Nee.** Wat eruitziet als cycliciteit is *persistentie*: onrust houdt aan en
-dooft uit, zonder klok. Dat is wel voorspelbaar, maar anders — en precies wat
-GARCH modelleert.
-
-De volledige analyse (spectraalanalyse, referentieverdelingen, het
-Slutsky-Yule-effect) staat in
-[docs/gevorderd/cyclusanalyse.md](docs/gevorderd/cyclusanalyse.md). Dat is
-verdiepingsmateriaal, geen onderdeel van het hoofdpad.
-
-Drie dingen die uit de figuren kwamen en niet uit de tabel:
-
-**De t-verdeling past met 3,6 vrijheidsgraden.** Dat is laag — de staarten zijn
-fors dikker dan normaal. In de QQ-plot ligt de data er zichtbaar beter op dan
-op de normale lijn. Dat is de empirische onderbouwing voor de schokverdeling
-in fase 4.
-
-**Kurtosis is extreem geconcentreerd.** 1% van de handelsdagen bepaalt 73% van
-het getal, 5% bepaalt 90%. Dat maakt kurtosis een instabiele schatting: haal
-je vijf dagen weg, dan verandert het getal fors. Het is een reden om er niet
-te veel gewicht aan te geven en de QQ-plot als hoofdbewijs te gebruiken.
-
-**Volatiliteit clustert, en dat is een apart verschijnsel.** De autocorrelatie
-van de rendementen zelf blijft binnen de toevalsgrenzen — de richting is
-onvoorspelbaar, zoals de efficiënte-markthypothese voorspelt. Maar de
-autocorrelatie van de *absolute* rendementen is duidelijk positief en houdt
-weken aan. Dat contrast is precies wat GARCH modelleert.
+**The central contrast:** direction is unpredictable, magnitude is not. A margin
+calculation only requires the second.
 
 ---
 
-## Vervolg
+## Methodology
 
-Fase 2 begint met de vraag die aan alle regressie voorafgaat: zijn deze reeksen
-stationair? Het antwoord is vrijwel zeker nee voor de niveaus, en dat bepaalt
-in welke vorm alles het model in gaat.
+### Phase 1 — Data layer and distributional analysis
+
+- 12 series from FRED and Yahoo Finance, 2003–present (**5,957** trading days)
+- Every series carries an economic rationale and a **pre-registered expected
+  sign** in [`config.py`](src/goldmodel/config.py) — a discipline against
+  post-hoc rationalisation
+- Parquet cache with TTL, stale fallback, and per-series graceful degradation
+- Revision behaviour classified per series; ALFRED vintage retrieval implemented
+  for series that *are* revised
+- Publication lag recorded per series (FRED publishes day *t* on business day
+  *t+1*) and applied when building the model matrix
+
+### Phase 2 — Stationarity and relationship stability
+
+- **Spurious regression quantified:** on price levels, OLS finds a "significant"
+  relationship in **92%** of 400 trials on *independent random walks*. On
+  differences: 4%, as it should be.
+- ADF and KPSS on all series — opposing null hypotheses, so they can corroborate
+  or contradict each other. Ten of twelve series are non-stationary in levels.
+- Rolling correlations (252-day window) expose the instability that a
+  full-period average hides.
+- VIF per driver to make multicollinearity visible.
+
+### Phase 3 — Regression with honest validation
+
+- OLS with **Newey-West** standard errors, because residuals are
+  heteroskedastic and autocorrelated. The correction inflates standard errors by
+  **1.66–1.81×**; one driver moves from significant to insignificant.
+- **Walk-forward validation:** train to day *t*, predict *t+1*, roll forward.
+  Drivers lagged one day. Never trained on future data.
+- Benchmark is a **random walk**. Result: OLS is **1.96% worse** on RMSE, with a
+  negative out-of-sample R².
+- **Diebold-Mariano** test to separate a real difference from noise: no
+  significant difference.
+
+### Phase 4 — Monte Carlo and margin sizing
+
+Three models, each justified by an earlier measurement:
+
+| Model | Fixes | 99% buffer | Expected Shortfall |
+|---|---|---|---|
+| GBM, normal shocks | — (reference) | 26.0% | 29.7% |
+| GBM, Student-t (df 3.5) | fat tails (Phase 1) | 26.4% | 32.3% |
+| **GARCH(1,1), t shocks** | also clustering (Phase 1) | **34.5%** | **44.9%** |
+
+- Per path we measure **maximum adverse excursion** — the largest *intermediate*
+  move against the position, because that is when a margin call arrives, not at
+  expiry.
+- **Drift is zero by default.** The historical mean of +0.043%/day is +2.7% per
+  quarter and raises the 99% VaR by over 3 percentage points. Phase 3 showed
+  direction is unpredictable, and the standard error of that mean is one third of
+  the estimate itself. Including it would smuggle in a point forecast.
+
+#### Validation against history, not just internal consistency
+
+| Source | p50 | p95 | p99 | Deviation |
+|---|---|---|---|---|
+| **Historical (actual data)** | 6.7% | 21.3% | **29.3%** | — |
+| GBM normal | 5.7% | 18.9% | 26.0% | −3.3 pp |
+| GBM t | 5.3% | 18.6% | 26.4% | −3.0 pp |
+| GARCH t | 6.1% | 22.3% | 34.5% | +5.2 pp |
+
+Constant-volatility models **understate** the tail; GARCH **overstates** it.
+Cause: persistence of 0.9956 is near-unit, so the long-run level is poorly
+identified — GARCH estimates 20.8% annualised volatility where the data says
+18.3%.
+
+- **Kupiec proportion-of-failures test** across three horizons. All three models
+  pass, but GARCH is best calibrated: on the sharpest test (495 windows),
+  exactly 5 breaches against 5 expected, versus 9 for the normal model.
 
 ---
 
-## Licentie en disclaimer
+## The answer
 
-Educatief project. De data komt van FRED (publiek domein) en Yahoo Finance
-(onofficiële bron, geen garanties op juistheid of beschikbaarheid). Geen
-handelsadvies.
+At $4,379/oz, one contract (100 oz) is **$437,940** notional.
+
+| Confidence | Buffer | USD |
+|---|---|---|
+| 50% | 6.1% | $26,554 |
+| 95% | 22.3% | $97,751 |
+| **99%** | **34.5%** | **$151,108** |
+| 99.9% | 57.6% | $252,443 |
+
+Reported as a **range**, because the models disagree and that disagreement is
+informative:
+
+- **Lower bound** (constant volatility): ~26%
+- **Historically observed**: 29.3%
+- **Upper bound** (GARCH, best calibrated): 34.5%
+
+### The qualification that reframes the result
+
+This is a **liquidity requirement, not a loss.** In a hedge, physical gold
+appreciates by as much as the futures position loses; net wealth is unchanged.
+The cash is needed only *at the moment* the broker calls.
+
+A credit line against the collateral therefore does the same work as cash,
+without the opportunity cost. "Access to 34.5%" is a materially different
+requirement from "34.5% in cash".
+
+---
+
+## Errors found and corrected
+
+Documented because finding them is what the validation layer is for.
+
+| Error | Impact | How it surfaced |
+|---|---|---|
+| Summed all margin deposits instead of the peak net outlay | Overstated quarterly buffer by ~5 pp | Net loss did not equal the price move |
+| Reported the contemporaneous R² of 18.6% as if usable | Overstated predictability by a factor of 11 | Lagging the drivers dropped it to 1.7% |
+| Claimed Kupiec rejected the normal model (p=0.045) | False finding | The p-value flipped with the random seed — Monte Carlo noise, not evidence |
+| Used a shuffled null in the spectral test | Would have "found" a 1,483-day cycle | An AR(1) null preserving persistence removed it |
+| Asserted adjusted R² penalises useless variables | Overstated its protection | Adding 50 noise columns *raised* adjusted R² |
+
+Each is now covered by a regression test.
+
+---
+
+## Quality assurance
+
+- **139 tests**, no network dependency (synthetic frames, temporary directories)
+- **Positive controls throughout:** the walk-forward validator must *find* a
+  planted signal (out-of-sample R² > 0.5); the Kupiec test must *reject* a
+  miscalibrated model. Without these, "no signal found" carries no information.
+- **Look-ahead guard:** a test replaces all data after day 1,500 with nonsense
+  and asserts that earlier predictions are bit-identical.
+- Fixed random seeds, so every reported figure is reproducible.
+
+---
+
+## Getting started
+
+```bash
+python -m venv .venv
+.venv\Scripts\Activate.ps1           # Windows
+pip install -r requirements.txt
+
+cp .env.example .env                  # add a free FRED API key
+python scripts/check_setup.py         # verifies packages, key, connections, cache
+```
+
+Without a FRED key the project still runs on the Yahoo Finance series and reports
+per series what succeeded.
+
+### Reproducing the analysis
+
+```bash
+python scripts/fetch_data.py              # retrieve and cache data
+python scripts/plot_distributions.py      # Phase 1: distributional figures
+python scripts/fase2_stationariteit.py    # Phase 2: ADF/KPSS, spurious regression
+python scripts/fase2_correlaties.py       # Phase 2: correlations and stability
+python scripts/fase3_regressie.py         # Phase 3: OLS, walk-forward, DM test
+python scripts/fase4_simulatie.py         # Phase 4: Monte Carlo, VaR, ES
+python scripts/fase4_figuren.py           # Phase 4: figures and Kupiec validation
+python -m pytest tests/ -q                # 139 tests
+```
+
+---
+
+## Technical stack
+
+`pandas` · `numpy` · `statsmodels` · `arch` (GARCH) · `scikit-learn` (ridge) ·
+`scipy` · `pyarrow` · `matplotlib` · `pytest`
+
+**Design notes.** Series definitions are data, not code — adding a driver is a
+configuration change. The cache interface is deliberately narrow
+(`load`/`save`/`is_fresh`) so a SQLite backend can replace Parquet when vintage
+panels require querying. Docstrings and comments are in Dutch (the author's
+working language); all identifiers are in English.
+
+---
+
+## Repository layout
+
+```
+src/goldmodel/
+  config.py          series definitions: economic rationale + expected sign
+  margin.py          margin accounting and buffer requirement
+  models.py          OLS/Newey-West, walk-forward, Diebold-Mariano
+  simulate.py        Monte Carlo, GARCH, VaR/ES, Kupiec
+  data/              FRED + ALFRED, Yahoo, Parquet cache, loader
+  viz/               figures per analysis layer
+scripts/             one runnable script per analysis step
+tests/               139 tests, including positive controls
+docs/                findings per phase, concepts, backlog
+output/figures/      23 figures, 20 in the main analysis (gitignored)
+```
+
+### Documentation
+
+| Document | Contents |
+|---|---|
+| [HET_HELE_VERHAAL.md](docs/HET_HELE_VERHAAL.md) | the full narrative, zero to now |
+| [fase2_resultaat.md](docs/fase2_resultaat.md) | stationarity, correlations, stability |
+| [fase3_resultaat.md](docs/fase3_resultaat.md) | regression and walk-forward validation |
+| [fase4_resultaat.md](docs/fase4_resultaat.md) | simulation, VaR, Kupiec, the answer |
+| [r2_uitgelegd.md](docs/r2_uitgelegd.md) | why R² is 18.6%, 1.7%, and −0.04 |
+| [vintage_data.md](docs/vintage_data.md) | revisions, ALFRED, look-ahead bias |
+| [begrippen.md](docs/begrippen.md) | every statistical concept, with references |
+| [backlog/](docs/backlog/README.md) | proposals with the reason they are deferred |
+
+Documentation is written in Dutch; this README summarises the findings in English.
+
+---
+
+## Known limitations
+
+Stated explicitly rather than left for a reader to discover.
+
+1. **The Kupiec test is weak at this sample size.** Even with 495 windows you
+   expect only 5 breaches; the difference between 5 and 9 is not statistically
+   separable. Properly distinguishing the models would require more than 23 years
+   of data.
+2. **GARCH persistence of 0.9956 is near-unit.** The long-run variance is
+   therefore poorly identified, which is why GARCH overstates the quarterly tail
+   by roughly 5 pp.
+3. **Differencing discards level information.** The arbitrage argument for real
+   rates concerns levels; cointegration would address this and is not
+   implemented. Documented in the backlog.
+4. **Continuous front-month futures contain roll effects.** Small for gold (flat
+   forward curve) but present.
+5. **Few backtest windows at the quarterly horizon** (78 non-overlapping) — an
+   unavoidable consequence of 23 years of data at that horizon.
+6. **Unstable coefficients are reported, not solved.** Four of five drivers
+   change sign over time; a regime-switching model is the logical next step and
+   sits in the backlog.
+
+---
+
+## License and data sources
+
+Educational project. Data from FRED (public domain) and Yahoo Finance (unofficial
+source, no guarantees on accuracy or availability). Not investment advice.
