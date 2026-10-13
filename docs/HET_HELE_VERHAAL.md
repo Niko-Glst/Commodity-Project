@@ -225,11 +225,11 @@ vertraging):
 | Model | RMSE | Directional accuracy | R² out-of-sample | vs. benchmark |
 |---|---|---|---|---|
 | **random_walk** | 0,010081 | n.v.t. | +0,0000 | — |
-| **ols** | **0,010279** | **43,8%** | **−0,0396** | **+1,96%** |
-| ridge | 0,010279 | 43,8% | −0,0396 | +1,96% |
+| **ols** | **0,010774** | **51,9%** | **+0,0110** | **−0,55%** |
+| ridge | 0,010774 | 51,9% | +0,0110 | −0,55% |
 
 **Het model is 2% slechter dan nul voorspellen.** De out-of-sample R² is
-negatief: je was beter af met niets doen. De richting raden lukt in 43,8% van de
+positief maar niet significant (DM p = 0,170). De richting raden lukt in 51,9% van de
 gevallen — onder munt-opgooien.
 
 Diebold-Mariano: geen significant verschil. Het model is dus niet *aantoonbaar*
@@ -262,7 +262,7 @@ signaal; op kwartaalbasis mogelijk wel, maar te weinig data.**
 
 | | Voorspelbaar? | Bewijs |
 |---|---|---|
-| **Richting** van goud | **Nee** | R² out-of-sample −0,04; directional accuracy 43,8% |
+| **Richting** van goud | **Nee** | R² out-of-sample +0,011 (DM p = 0,170); accuracy 51,9% (p = 0,072) |
 | **Grootte** van de beweging | **Ja** | autocorrelatie volatiliteit 0,98, houdt maanden aan |
 
 **Dat is het resultaat van drie fases werk**, en het is een ongemakkelijke

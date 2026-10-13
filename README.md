@@ -69,7 +69,7 @@ is made explicit and justified — including the choices that make the result
 | 5 | Macro relationships are weak | Strongest single driver explains **16%** of daily variance |
 | 6 | Macro relationships are unstable | **4 of 5** drivers change sign over time (S&P 500: −0.33 to +0.43) |
 | 7 | Gold is not a daily safe haven | Gold–VIX correlation **−0.02** across the full period *and every sub-period*, including the 2020 crash |
-| 8 | Direction is not predictable | Out-of-sample R² **−0.04**; directional accuracy **43.8%** (below coin-flip) |
+| 8 | Direction is not predictable | Out-of-sample R² **+0.011**, Diebold-Mariano **p = 0.170**; directional accuracy **51.9%** (**p = 0.072**) — no significant predictive power |
 | 9 | Magnitude *is* predictable | This is what the margin model exploits |
 
 **The central contrast:** direction is unpredictable, magnitude is not. A margin
@@ -112,7 +112,7 @@ calculation only requires the second.
   **1.66–1.81×**; one driver moves from significant to insignificant.
 - **Walk-forward validation:** train to day *t*, predict *t+1*, roll forward.
   Drivers lagged one day. Never trained on future data.
-- Benchmark is a **random walk**. Result: OLS is **1.96% worse** on RMSE, with a
+- Benchmark is a **random walk**. Result: OLS is **0.55% better** on RMSE, with a
   negative out-of-sample R².
 - **Diebold-Mariano** test to separate a real difference from noise: no
   significant difference.

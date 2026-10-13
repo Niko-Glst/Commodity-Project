@@ -19,9 +19,9 @@ Walk-forward, 12 years, 3,024 out-of-sample trading days.
 
 | Measure | Value | Benchmark |
 |---|---|---|
-| Directional accuracy | 43.8% | 50% = coin flip |
+| Directional accuracy | 51.9% | 50% = coin flip (p = 0.072, n.s.) |
 | Out-of-sample R² | −0.040 | 0 = predicting zero |
-| RMSE vs random walk | +1.96% | worse |
+| RMSE vs random walk | −0.55% | better, but Diebold-Mariano p = 0.170 |
 | Diebold-Mariano | not significant | — |
 
 Built into a strategy, with a 1-day execution lag and 1 bp round-trip costs:

@@ -55,7 +55,7 @@ resultaat *minder* indrukwekkend maken.
 | 5 | Macro-verbanden zijn zwak | Sterkste losse driver verklaart **16%** van de dagelijkse variantie |
 | 6 | Macro-verbanden zijn instabiel | **4 van 5** drivers wisselen van teken door de tijd (S&P 500: −0,33 tot +0,43) |
 | 7 | Goud is op dagbasis geen veilige haven | Correlatie goud–VIX **−0,02** over de hele periode *en in elke subperiode*, inclusief de crash van 2020 |
-| 8 | De richting is niet voorspelbaar | R² out-of-sample **−0,04**; directional accuracy **43,8%** (onder munt-opgooien) |
+| 8 | De richting is niet voorspelbaar | R² out-of-sample **+0,011**, Diebold-Mariano **p = 0,170**; accuracy **51,9%** (**p = 0,072**) — geen significante voorspelkracht |
 | 9 | De grootte *wel* | Dit is wat het margemodel gebruikt |
 
 **Het centrale contrast:** de richting is onvoorspelbaar, de grootte niet. Een
@@ -100,7 +100,7 @@ margeberekening heeft alleen het tweede nodig.
   niet-significant.
 - **Walk-forward validatie:** schat tot dag *t*, voorspel *t+1*, schuif op.
   Drivers met één dag gelagd. Nooit getraind op toekomstige data.
-- De benchmark is een **random walk**. Uitkomst: OLS is **1,96% slechter** op
+- De benchmark is een **random walk**. Uitkomst: OLS is **0,55% beter** op
   RMSE, met een negatieve out-of-sample R².
 - **Diebold-Mariano-toets** om een echt verschil van ruis te scheiden: geen
   significant verschil.

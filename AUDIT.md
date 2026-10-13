@@ -97,6 +97,13 @@ rerun.
 Phase 3 reproduces exactly: directional accuracy **43.8%**, out-of-sample R²
 **−0.0396**, RMSE **+1.96%** vs random walk, in-sample R² **0.1864**.
 
+> **⚠ Superseded — see §9 (H3).** These figures reproduce, but they are
+> *wrong*: they come from a `horizon=1, step=21` call that predicts 145
+> disjoint days. Corrected: accuracy **51.9%**, R² **+0.0110**, RMSE
+> **−0.55%**. This paragraph is left in place because treating
+> reproducibility as evidence of correctness was itself the audit's biggest
+> miss.
+
 **Implication for the freeze:** the buffer number drifts with the data, so
 Phase 2 must be a single atomic run with one timestamp, and the paper must
 quote that run's date.
@@ -496,3 +503,80 @@ Where it needs work:
 The negative results — direction unpredictable, GARCH not beating a fixed rule,
 gold not hedging equities — all survived the audit. The §4.3 hedge analysis is
 new and is the strongest addition available to the paper.
+
+---
+
+## 9. Addendum (post-freeze): H3 — the phase-3 bug was never actually fixed
+
+Found while freezing results, because `freeze_results.py` called
+`walk_forward_validate` with the correct arguments and disagreed with every
+published number.
+
+### What happened
+
+[fase3_regressie.py:182](scripts/fase3_regressie.py#L182) calls:
+
+```python
+walk_forward_validate(target, drivers, min_train=1000, step=21)
+```
+
+No `horizon` argument, so it takes the default `horizon=1`. **That is exactly
+the bug `docs/WALKTHROUGH.md` presents as a worked example of a fixed
+mistake.** It was fixed in `pipeline.py` and never in the script that produced
+the published phase-3 numbers.
+
+### The numbers
+
+| Configuration | n_oos | R²_oos | Dir. accuracy | RMSE vs RW |
+|---|---|---|---|---|
+| `horizon=1, step=21` (what the docs quote) | **145** | **−0.0396** | **43.8%** | **+1.96%** |
+| `horizon=21, step=21` (correct) | **3,024** | **+0.0110** | **51.9%** | **−0.55%** |
+
+Every published phase-3 figure comes from the buggy configuration: 145 disjoint
+days, not 3,024. The sign of the headline finding reverses.
+
+### Does the conclusion survive? Yes — but the evidence does not
+
+Significance of the corrected result (n = 3,024):
+
+| Test | Value | Verdict |
+|---|---|---|
+| Diebold-Mariano, OLS vs random walk | DM = −1.371, **p = 0.170** | not significant |
+| Directional accuracy | 51.65%, z = 1.82, **p = 0.072** | not significant at 5% |
+
+So "macro data does not reliably predict gold direction" **still holds**. What
+changes is the basis: the honest statement is *"no significant predictive
+power, R² ≈ +0.01, p = 0.17"*, not *"worse than a coin flip at 43.8%"*.
+
+The old numbers overstated the negative result. A 43.8% directional accuracy on
+145 scattered days was noise being read as a finding.
+
+### Affected files
+
+Every one of these quotes the buggy figures:
+
+- `docs/de_claim.md:47,49`
+- `docs/fase3_resultaat.md:107,108,112,115`
+- `docs/HET_HELE_VERHAAL.md:228,229,232`
+- `docs/RESULTS.md`, `docs/WALKTHROUGH.md`, `README.md`
+- `AUDIT.md:97` — my own §2, which reported these as "reproducing exactly".
+  They did reproduce; the script reproduced its own bug.
+
+### Severity
+
+**HIGH.** Not because the conclusion flips — it does not — but because the
+central claim was evidenced by a configuration the project itself documents as
+wrong, and because my §2 called that reproduction a pass.
+
+### Status
+
+**Flagged, not fixed.** Fixing it means a one-line change to
+`fase3_regressie.py` plus updating the phase-3 numbers in six documents. That
+is a rewrite of the project's headline result and needs your decision first.
+
+### Why the audit missed it initially
+
+§2 checked that phase 3 *reproduced its stored numbers*. It did. Reproducibility
+and correctness are different properties, and a script that deterministically
+reproduces its own bug passes the first while failing the second. The only
+reason it surfaced is that a second, independent implementation disagreed.

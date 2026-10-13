@@ -55,7 +55,7 @@ from goldmodel.simulate import (  # noqa: E402
     SimulationSettings,
     fit_garch,
     simulate_garch,
-    simulate_gbm,
+    simulate_gbm_normal,
 )
 from goldmodel.validation import (  # noqa: E402
     compare_buffer_rules,
@@ -312,13 +312,29 @@ def main() -> int:
         source="backtest._performance_metrics",
         note="1/sqrt(jaren)",
     )
-    significance = sharpe_significance(net["sharpe"], net["years"])
+    significance = sharpe_significance(backtest.net_returns)
+    # De drempel waarboven een Sharpe van nul te onderscheiden is: 1,96 keer
+    # de standaardfout. Die standaardfout is 1/sqrt(jaren), dus met twaalf
+    # jaar data heb je al 0,57 nodig voordat je uberhaupt iets mag beweren.
     record(
         "sharpe_required_for_significance",
-        round(float(significance["required_sharpe"]), 3),
+        round(1.96 * float(significance["standard_error"]), 3),
+        unit="dimensieloos",
+        source="1.96 * backtest.sharpe_significance()['standard_error']",
+        note="drempel op 5% tweezijdig",
+    )
+    record(
+        "sharpe_t_statistic_net",
+        round(float(significance["t_statistic"]), 3),
         unit="dimensieloos",
         source="backtest.sharpe_significance",
-        note="drempel op 5% tweezijdig",
+    )
+    record(
+        "sharpe_significant_net",
+        str(significance["significant"]),
+        unit="waar/onwaar",
+        source="backtest.sharpe_significance",
+        note="|t| > 1,96",
     )
 
     # -- fase 4: simulatie en buffer --------------------------------------
@@ -379,7 +395,7 @@ def main() -> int:
         n_paths=N_PATHS, horizon_days=HORIZON_DAYS, seed=SEED, is_short=True
     )
     garch_simulation = simulate_garch(float(gold.mean()), garch, settings)
-    gbm_simulation = simulate_gbm(
+    gbm_simulation = simulate_gbm_normal(
         float(gold.mean()), float(gold.std()), settings
     )
 
@@ -389,7 +405,77 @@ def main() -> int:
         unit="fractie van notioneel",
         source="simulate.simulate_garch",
         frequency="63-daagse horizon",
-        note=f"seed {SEED}, {N_PATHS} paden, conditioneel op de startvolatiliteit",
+        note=(
+            f"seed {SEED}, {N_PATHS} paden. CONDITIONEEL op een "
+            f"startvolatiliteit van "
+            f"{np.sqrt(garch.last_variance * 252) * 100:.1f}% op "
+            f"{ANALYSIS_END_DATE}. Zonder die toestand is het getal niet te "
+            f"interpreteren - zie buffer_conditional_table."
+        ),
+    )
+
+    # De buffer is een CONDITIONELE grootheid. Eén kopgetal rapporteren
+    # suggereert een precisie die er niet is: dezelfde code gaf 25% tot 66%
+    # over zes einddatums, puur doordat de startvolatiliteit verschilde.
+    #
+    # Deze tabel houdt de steekproef en alle parameters VAST en varieert
+    # alleen de startvariantie. Dat isoleert het effect.
+    conditional_rows = []
+    for ratio in (0.5, 0.67, 1.0, 1.17, 1.79, 3.16, 4.0):
+        variant = GarchParameters(
+            omega=garch.omega,
+            alpha=garch.alpha,
+            beta=garch.beta,
+            degrees_of_freedom=garch.degrees_of_freedom,
+            last_variance=garch.long_run_variance * ratio,
+            long_run_variance=garch.long_run_variance,
+        )
+        outcome = simulate_garch(float(gold.mean()), variant, settings)
+        conditional_rows.append(
+            {
+                "vol_ratio": ratio,
+                "start_vol_pct": round(
+                    float(np.sqrt(variant.last_variance * 252) * 100), 1
+                ),
+                "buffer_99_pct": round(outcome.value_at_risk(0.99) * 100, 1),
+                "es_99_pct": round(outcome.expected_shortfall(0.99) * 100, 1),
+            }
+        )
+    conditional = pd.DataFrame(conditional_rows)
+    conditional.to_csv(TABLES / "buffer_conditional_on_start_state.csv", index=False)
+    print("    buffer_conditional_on_start_state.csv")
+
+    record(
+        "buffer_99_range_low",
+        round(float(conditional["buffer_99_pct"].min() / 100), 4),
+        unit="fractie van notioneel",
+        source="scripts/freeze_results.py startvariantie-sweep",
+        frequency="63-daagse horizon",
+        note=f"bij een startvolatiliteit van {conditional['start_vol_pct'].min():.1f}%",
+    )
+    record(
+        "buffer_99_range_high",
+        round(float(conditional["buffer_99_pct"].max() / 100), 4),
+        unit="fractie van notioneel",
+        source="scripts/freeze_results.py startvariantie-sweep",
+        frequency="63-daagse horizon",
+        note=f"bij een startvolatiliteit van {conditional['start_vol_pct'].max():.1f}%",
+    )
+    record(
+        "buffer_99_at_long_run_vol",
+        round(
+            float(
+                conditional.loc[
+                    conditional["vol_ratio"] == 1.0, "buffer_99_pct"
+                ].iloc[0]
+                / 100
+            ),
+            4,
+        ),
+        unit="fractie van notioneel",
+        source="scripts/freeze_results.py startvariantie-sweep",
+        frequency="63-daagse horizon",
+        note="startvolatiliteit gelijk aan het langetermijngemiddelde",
     )
     record(
         "es_99_garch_t",
@@ -406,7 +492,7 @@ def main() -> int:
         frequency="63-daagse horizon",
     )
     for rule_pct in (0.05, 0.10):
-        covered = float((garch_simulation.max_adverse_excursion <= rule_pct).mean())
+        covered = float((garch_simulation.max_adverse <= rule_pct).mean())
         record(
             f"coverage_of_{int(rule_pct * 100)}pct_rule",
             round(covered, 4),
@@ -628,7 +714,7 @@ def main() -> int:
 
     # F4: buffer tegen vuistregel
     fig, ax = plt.subplots(figsize=(6.5, 4))
-    excursions = np.sort(garch_simulation.max_adverse_excursion) * 100
+    excursions = np.sort(garch_simulation.max_adverse) * 100
     cumulative = np.arange(1, len(excursions) + 1) / len(excursions) * 100
     ax.plot(excursions, cumulative, lw=1.6, color="#4C72B0")
     for rule, colour in ((5, "#C44E52"), (10, "#DD8452")):
@@ -676,37 +762,46 @@ def main() -> int:
             )
         save_figure(fig, "fig5_gold_not_an_equity_hedge")
 
-    # F6: gevoeligheid voor de einddatum
+    # F6: de buffer hangt aan de starttoestand.
+    #
+    # Twee reeksen in één figuur, en dat is bewust:
+    #   - de gecontroleerde sweep (vaste steekproef, alleen startvariantie)
+    #     is het BEWIJS van het mechanisme;
+    #   - de zes einddatums zijn hoe het ONTDEKT werd.
+    # De tweede alleen zou zwak zijn (N=6, één invloedrijk punt); de eerste
+    # alleen zou verbergen dat het een praktisch probleem is.
     drift_path = RESULTS / "drift_numbers.json"
+    fig, ax = plt.subplots(figsize=(6.5, 4.2))
+    ax.plot(
+        conditional["start_vol_pct"], conditional["buffer_99_pct"],
+        "o-", lw=1.6, color="#4C72B0", zorder=3,
+        label="gecontroleerd: vaste steekproef, alleen startvol varieert",
+    )
+    correlation = float("nan")
     if drift_path.exists():
         drift = json.loads(drift_path.read_text(encoding="utf-8"))
         frame = pd.DataFrame(drift["rows"])
-        fig, ax = plt.subplots(figsize=(6.5, 4))
         ax.scatter(
-            frame["vol_ratio"], frame["buffer_99_pct"],
-            s=70, color="#4C72B0", zorder=3,
+            frame["startvol_pct"], frame["buffer_99_pct"],
+            s=85, marker="s", color="#C44E52", zorder=4,
+            label="waargenomen: zes einddatums, zelfde code",
         )
         for _, row in frame.iterrows():
             ax.annotate(
                 row["einddatum"],
-                (row["vol_ratio"], row["buffer_99_pct"]),
-                textcoords="offset points", xytext=(7, -3), fontsize=8,
+                (row["startvol_pct"], row["buffer_99_pct"]),
+                textcoords="offset points", xytext=(8, -4), fontsize=7.5,
             )
-        slope, intercept = np.polyfit(frame["vol_ratio"], frame["buffer_99_pct"], 1)
-        xs = np.linspace(frame["vol_ratio"].min(), frame["vol_ratio"].max(), 50)
         correlation = float(
             np.corrcoef(frame["vol_ratio"], frame["buffer_99_pct"])[0, 1]
         )
-        ax.plot(
-            xs, slope * xs + intercept, "--", lw=1.2, color="grey",
-            label=f"$R^2$ = {correlation ** 2:.3f}",
-        )
-        ax.set_xlabel("conditionele variantie op de laatste dag / langetermijnvariantie")
-        ax.set_ylabel("99%-buffer (% van notioneel)")
-        ax.set_title("De buffer hangt aan de startvolatiliteit, niet aan de steekproef")
-        ax.legend(frameon=False)
-        save_figure(fig, "fig6_buffer_depends_on_start_state")
+    ax.set_xlabel("geannualiseerde volatiliteit op de startdatum (%)")
+    ax.set_ylabel("99%-buffer (% van notioneel)")
+    ax.set_title("De buffer is conditioneel op de starttoestand")
+    ax.legend(frameon=False, fontsize=8.5, loc="upper left")
+    save_figure(fig, "fig6_buffer_depends_on_start_state")
 
+    if drift_path.exists():
         record(
             "buffer_spread_across_end_dates",
             float(drift["buffer_spread_pp"]),

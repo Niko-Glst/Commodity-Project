@@ -232,9 +232,10 @@ def walk_forward_validate(
     drivers: pd.DataFrame,
     *,
     min_train: int = 1000,
-    horizon: int = 1,
+    horizon: int = 21,
     step: int = 21,
     ridge_alpha: float = 1.0,
+    allow_gaps: bool = False,
 ) -> WalkForwardResult:
     """Valideert de modellen out-of-sample, zonder look-ahead.
 
@@ -261,7 +262,35 @@ def walk_forward_validate(
         horizon: Hoeveel dagen vooruit per keer.
         step: Hoeveel dagen de vensters opschuiven.
         ridge_alpha: Regularisatiesterkte voor ridge.
+
+    Verhouding tussen horizon en step
+    ---------------------------------
+    Is ``horizon`` kleiner dan ``step``, dan ontstaan er GATEN: je voorspelt
+    ``horizon`` dagen en slaat er ``step - horizon`` over. Wat je overhoudt is
+    geen tijdreeks maar een verzameling losse dagen. Je kunt er geen omzet,
+    geen samengesteld rendement en geen drawdown uit berekenen, en de
+    R-kwadraat wordt ruis.
+
+    Dat is hier echt misgegaan: met ``horizon=1, step=21`` leverde deze
+    functie 145 losse dagen op in plaats van 3.024 aaneengesloten, en de
+    gepubliceerde R-kwadraat sloeg om van +0,01 naar -0,04. Het viel niet op
+    omdat niets crasht. Daarom is het nu een harde fout in plaats van een
+    stille standaardinstelling.
+
+    Wil je expliciet met gaten werken - bijvoorbeeld om de rekentijd te
+    beperken - geef dan ``allow_gaps=True`` mee.
+
+    Opwerpen:
+        ValueError: Als ``horizon < step`` zonder ``allow_gaps=True``.
     """
+    if horizon < step and not allow_gaps:
+        raise ValueError(
+            f"horizon={horizon} is kleiner dan step={step}: dat levert "
+            f"{step - horizon} overgeslagen dagen per venster op, en dus losse "
+            f"dagen in plaats van een doorlopende reeks. Bedoel je "
+            f"horizon={step}? Zo niet, geef allow_gaps=True mee."
+        )
+
     # Lag de drivers: informatie van dag t-1 verklaart het rendement van dag t.
     lagged = drivers.shift(1)
     data = pd.concat([target, lagged], axis=1).dropna()

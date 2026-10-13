@@ -22,8 +22,9 @@ Fit on the first 1,000 days, predict the next 21, slide forward 21, repeat.
 The model is re-estimated every month and never sees its own future.
 
 It produces **3,024 out-of-sample days over 12 years**, and the answer is
-negative: directional accuracy 43.8%, out-of-sample R² −0.040. Worse than a
-coin flip, worse than predicting zero.
+negative, though not in the way an earlier version of this document claimed:
+directional accuracy 51.9% (p = 0.072) and out-of-sample R² +0.011, with a
+Diebold-Mariano p of 0.170. Not distinguishable from zero.
 
 That negative result is the foundation for everything else. If direction were
 predictable, the project would be about trading it. It is not, so the project
@@ -56,10 +57,41 @@ actually based on?* — and getting 145 where 3,000 was expected.
 **The fix.** `horizon=21, step=21`. Predict 21 days, move 21 days: windows
 that tile the calendar with no gaps and no overlap.
 
-**The lesson.** A plausible number is not a correct number. The failure mode
-that matters in this kind of work is not the crash — it is the result that
-looks reasonable, passes every test, and answers a different question from
-the one you asked. Here that difference was a factor of twenty in N.
+**And then it happened again, in a worse way.** An earlier version of this
+document stopped at the paragraph above and called the bug fixed. It was
+fixed in `pipeline.py` — and not in `scripts/fase3_regressie.py`, which is
+the script that produced every published phase-3 number. So the headline
+claim of this project rested, for months, on the exact configuration this
+page holds up as a cautionary tale.
+
+| | n | R² | Accuracy | vs. random walk |
+|---|---|---|---|---|
+| `horizon=1, step=21` (published) | 145 | −0.0396 | 43.8% | +1.96% |
+| `horizon=21, step=21` (correct) | 3,024 | +0.0110 | 51.9% | −0.55% |
+
+The conclusion survived — direction is still not predictable, since the
+corrected edge has p = 0.170 — but the evidence was wrong, and wrong in the
+*flattering* direction: the old numbers made the negative result look much
+stronger than the data supports.
+
+**How it finally surfaced.** `scripts/freeze_results.py` was written as an
+independent implementation and disagreed. Two implementations that disagree
+find bugs that one implementation cannot find by running a hundred times.
+
+**The lesson, revised.** A plausible number is not a correct number — and
+reproducibility is not correctness. The old figure reproduced perfectly on
+every run, because the script faithfully reproduced its own bug. What I
+treated as confirmation was only determinism.
+
+Two habits came out of this:
+
+1. A result that matches your expectation deserves *more* scrutiny, not less.
+   I checked the surprising numbers in this project carefully and waved
+   through the one that fit the story.
+2. The guard belongs in the code, not in the documentation. Writing "we fixed
+   this" in a Markdown file prevented nothing. `walk_forward_validate` now
+   **raises** on `horizon < step` unless you pass `allow_gaps=True`, and three
+   tests enforce it.
 
 ---
 

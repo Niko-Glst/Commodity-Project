@@ -13,6 +13,7 @@ resultaat en een bug, en fase 3 rust er volledig op.
 
 from __future__ import annotations
 
+import inspect
 import sys
 from pathlib import Path
 
@@ -204,7 +205,7 @@ def test_walk_forward_finds_a_real_signal() -> None:
     target = pd.Series(target_values, index=index)
     drivers = pd.DataFrame({"signal": driver_values}, index=index)
 
-    result = walk_forward_validate(target, drivers, min_train=800, step=50)
+    result = walk_forward_validate(target, drivers, min_train=800, horizon=50, step=50)
 
     ols_rmse = float(result.metrics.loc["ols", "rmse"])
     benchmark_rmse = float(result.metrics.loc["random_walk", "rmse"])
@@ -229,7 +230,7 @@ def test_walk_forward_finds_nothing_in_noise() -> None:
         index=index,
     )
 
-    result = walk_forward_validate(target, drivers, min_train=800, step=50)
+    result = walk_forward_validate(target, drivers, min_train=800, horizon=50, step=50)
 
     assert float(result.metrics.loc["ols", "rmse"]) >= float(
         result.metrics.loc["random_walk", "rmse"]
@@ -252,7 +253,7 @@ def test_walk_forward_lags_the_drivers() -> None:
     target = pd.Series(shock * 0.01, index=index)
     drivers = pd.DataFrame({"same_day": shock}, index=index)
 
-    result = walk_forward_validate(target, drivers, min_train=800, step=50)
+    result = walk_forward_validate(target, drivers, min_train=800, horizon=50, step=50)
 
     # Zonder lag zou dit een R² van bijna 1 geven; met lag vrijwel niets.
     assert float(result.metrics.loc["ols", "r2_oos"]) < 0.05
@@ -266,7 +267,7 @@ def test_random_walk_predicts_exactly_zero() -> None:
     target = pd.Series(rng.standard_normal(n) * 0.01, index=index)
     drivers = pd.DataFrame({"x": rng.standard_normal(n)}, index=index)
 
-    result = walk_forward_validate(target, drivers, min_train=800, step=50)
+    result = walk_forward_validate(target, drivers, min_train=800, horizon=50, step=50)
 
     assert (result.predictions["random_walk"] == 0.0).all()
     # Nul heeft geen teken, dus directional accuracy is niet van toepassing.
@@ -296,9 +297,9 @@ def test_no_training_data_leaks_from_the_future() -> None:
     corrupted_drivers = clean_drivers.copy()
     corrupted_drivers.iloc[1500:] = -999.0
 
-    clean = walk_forward_validate(clean_target, clean_drivers, min_train=800, step=50)
+    clean = walk_forward_validate(clean_target, clean_drivers, min_train=800, horizon=50, step=50)
     dirty = walk_forward_validate(
-        corrupted_target, corrupted_drivers, min_train=800, step=50
+        corrupted_target, corrupted_drivers, min_train=800, horizon=50, step=50
     )
 
     # Vergelijk alleen de voorspellingen van vóór de corruptie.
@@ -347,3 +348,61 @@ def test_diebold_mariano_handles_short_series() -> None:
 
     assert test["better"] == "onbepaald"
     assert np.isnan(test["statistic"])
+
+
+# -- de gaten-fout --------------------------------------------------------
+
+
+def test_walk_forward_rejects_gaps_by_default() -> None:
+    """horizon < step moet een fout geven, geen stille losse dagen.
+
+    Dit is de belangrijkste regressietest van dit bestand. Met
+    ``horizon=1, step=21`` voorspelde deze functie één dag per venster en
+    sloeg er twintig over: 145 losse dagen in plaats van 3.024
+    aaneengesloten. De gepubliceerde out-of-sample R-kwadraat sloeg daardoor
+    om van +0,01 naar -0,04.
+
+    Het viel maandenlang niet op omdat er niets crasht en het getal plausibel
+    is. Daarom is het nu een harde fout.
+    """
+    rng = np.random.default_rng(0)
+    index = pd.date_range("2010-01-01", periods=1200, freq="B")
+    drivers = pd.DataFrame({"a": rng.normal(0, 1, 1200)}, index=index)
+    target = pd.Series(rng.normal(0, 0.01, 1200), index=index)
+
+    with pytest.raises(ValueError, match="kleiner dan step"):
+        walk_forward_validate(target, drivers, min_train=1000, horizon=1, step=21)
+
+
+def test_walk_forward_allows_gaps_when_asked_explicitly() -> None:
+    """Met allow_gaps=True mag het wel - maar dan is het een keuze.
+
+    De optie blijft bestaan omdat er legitieme redenen zijn (rekentijd), maar
+    je moet hem uitspreken.
+    """
+    rng = np.random.default_rng(0)
+    index = pd.date_range("2010-01-01", periods=1200, freq="B")
+    drivers = pd.DataFrame({"a": rng.normal(0, 1, 1200)}, index=index)
+    target = pd.Series(rng.normal(0, 0.01, 1200), index=index)
+
+    result = walk_forward_validate(
+        target, drivers, min_train=1000, horizon=1, step=21, allow_gaps=True
+    )
+
+    # Met gaten houd je veel minder dagen over dan met een doorlopende reeks.
+    assert len(result.actuals) == result.n_folds
+    assert len(result.actuals) < 20
+
+
+def test_default_horizon_matches_default_step() -> None:
+    """De standaardinstellingen moeten een doorlopende reeks opleveren.
+
+    De oude standaard was horizon=1 met step=21, en juist die combinatie
+    veroorzaakte de fout. Wie de functie zonder argumenten gebruikt, hoort
+    het goede gedrag te krijgen.
+    """
+    signature = inspect.signature(walk_forward_validate)
+    assert (
+        signature.parameters["horizon"].default
+        == signature.parameters["step"].default
+    )

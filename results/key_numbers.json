@@ -1,0 +1,838 @@
+{
+  "_manifest": {
+    "frozen_at": "2026-10-13T15:21:24.338792+00:00",
+    "analysis_end_date": "2026-09-30",
+    "git_commit": "b4c50fd8dcee4cebd56ade32c0e4677d4f9c34f4",
+    "git_dirty": true,
+    "seed": 42,
+    "n_paths": 20000,
+    "python": "3.12.10",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "packages": {
+      "numpy": "2.5.3",
+      "pandas": "3.0.5",
+      "scipy": "1.18.1",
+      "statsmodels": "0.15.0",
+      "arch": "8.0.0"
+    }
+  },
+  "numbers": {
+    "n_trading_days": {
+      "value": 5964,
+      "unit": "dagen",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "DataLoader.build_panel"
+    },
+    "gold_price_final": {
+      "value": 4186.7,
+      "unit": "USD per troy ounce",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "panel['gold_futures']"
+    },
+    "gold_price_first": {
+      "value": 346.1,
+      "unit": "USD per troy ounce",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "panel['gold_futures']"
+    },
+    "gold_total_return": {
+      "value": 11.0968,
+      "unit": "fractie",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "panel['gold_futures']"
+    },
+    "annualised_volatility": {
+      "value": 0.1833,
+      "unit": "fractie per jaar",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "changes['gold_futures'].std() * sqrt(252)"
+    },
+    "kurtosis_excess": {
+      "value": 6.038,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scipy.stats.kurtosis(fisher=True)",
+      "note": "excess kurtosis; normaal = 0"
+    },
+    "skewness": {
+      "value": -0.491,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scipy.stats.skew"
+    },
+    "jarque_bera_p": {
+      "value": 0.0,
+      "unit": "p-waarde",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scipy.stats.jarque_bera",
+      "note": "H0 = normaliteit"
+    },
+    "days_beyond_3sigma": {
+      "value": 78,
+      "unit": "dagen",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "(|r| > 3*sigma).sum()"
+    },
+    "days_beyond_3sigma_normal_expectation": {
+      "value": 16.1,
+      "unit": "dagen",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "len(r) * 2 * (1 - Phi(3))"
+    },
+    "oos_r2_ols": {
+      "value": 0.011,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "21-daagse vensters",
+      "source": "models.walk_forward_validate"
+    },
+    "directional_accuracy_ols": {
+      "value": 0.5188,
+      "unit": "fractie",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "21-daagse vensters",
+      "source": "models.walk_forward_validate"
+    },
+    "oos_r2_random_walk": {
+      "value": 0.0,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "21-daagse vensters",
+      "source": "models.walk_forward_validate"
+    },
+    "directional_accuracy_random_walk": {
+      "value": NaN,
+      "unit": "fractie",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "21-daagse vensters",
+      "source": "models.walk_forward_validate"
+    },
+    "oos_r2_historisch": {
+      "value": -0.0001,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "21-daagse vensters",
+      "source": "models.walk_forward_validate"
+    },
+    "directional_accuracy_historisch": {
+      "value": 0.5221,
+      "unit": "fractie",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "21-daagse vensters",
+      "source": "models.walk_forward_validate"
+    },
+    "rmse_vs_random_walk_ols": {
+      "value": -0.553,
+      "unit": "procent (positief = slechter)",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "models.walk_forward_validate"
+    },
+    "n_oos_days": {
+      "value": 3024,
+      "unit": "dagen",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "models.walk_forward_validate"
+    },
+    "n_folds": {
+      "value": 144,
+      "unit": "vensters",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "models.walk_forward_validate"
+    },
+    "annual_turnover": {
+      "value": 181.0,
+      "unit": "omzet per jaar",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "signal.position_statistics"
+    },
+    "sign_flip_share": {
+      "value": 0.4871,
+      "unit": "fractie van de dagen",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "signal.predictions_to_positions"
+    },
+    "position_autocorrelation_lag1": {
+      "value": -0.0245,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "positions.autocorr(1)"
+    },
+    "sharpe_gross": {
+      "value": -0.0014,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "backtest._performance_metrics"
+    },
+    "annual_return_gross": {
+      "value": -0.00016,
+      "unit": "fractie per jaar",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "backtest._performance_metrics"
+    },
+    "max_drawdown_gross": {
+      "value": -0.3616,
+      "unit": "fractie",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "backtest._performance_metrics",
+      "note": "na correctie: exp(cumsum), niet (1+r).cumprod()"
+    },
+    "sharpe_net": {
+      "value": -0.1634,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "backtest._performance_metrics"
+    },
+    "annual_return_net": {
+      "value": -0.01826,
+      "unit": "fractie per jaar",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "backtest._performance_metrics"
+    },
+    "max_drawdown_net": {
+      "value": -0.3855,
+      "unit": "fractie",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "backtest._performance_metrics",
+      "note": "na correctie: exp(cumsum), niet (1+r).cumprod()"
+    },
+    "sharpe_standard_error": {
+      "value": 0.2887,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "backtest._performance_metrics",
+      "note": "1/sqrt(jaren)"
+    },
+    "sharpe_required_for_significance": {
+      "value": 0.566,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "1.96 * backtest.sharpe_significance()['standard_error']",
+      "note": "drempel op 5% tweezijdig"
+    },
+    "sharpe_t_statistic_net": {
+      "value": -0.566,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "backtest.sharpe_significance"
+    },
+    "sharpe_significant_net": {
+      "value": "False",
+      "unit": "waar/onwaar",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "backtest.sharpe_significance",
+      "note": "|t| > 1,96"
+    },
+    "garch_alpha": {
+      "value": 0.03623,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "simulate.fit_garch"
+    },
+    "garch_beta": {
+      "value": 0.95938,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "simulate.fit_garch"
+    },
+    "garch_persistence": {
+      "value": 0.99561,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "simulate.fit_garch",
+      "note": "alpha + beta"
+    },
+    "garch_half_life": {
+      "value": 157.6,
+      "unit": "handelsdagen",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "log(0.5)/log(alpha+beta)"
+    },
+    "garch_df": {
+      "value": 4.786,
+      "unit": "vrijheidsgraden",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "simulate.fit_garch (MLE)"
+    },
+    "garch_df_se": {
+      "value": 0.299,
+      "unit": "standaardfout",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "arch std_err['nu']"
+    },
+    "garch_start_volatility": {
+      "value": 0.226,
+      "unit": "fractie per jaar",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "sqrt(last_variance * 252)",
+      "note": "conditionele volatiliteit op de laatste dag"
+    },
+    "garch_long_run_volatility": {
+      "value": 0.2086,
+      "unit": "fractie per jaar",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "sqrt(long_run_variance * 252)"
+    },
+    "buffer_99_garch_t": {
+      "value": 0.3696,
+      "unit": "fractie van notioneel",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "63-daagse horizon",
+      "source": "simulate.simulate_garch",
+      "note": "seed 42, 20000 paden. CONDITIONEEL op een startvolatiliteit van 22.6% op 2026-09-30. Zonder die toestand is het getal niet te interpreteren - zie buffer_conditional_table."
+    },
+    "buffer_99_range_low": {
+      "value": 0.242,
+      "unit": "fractie van notioneel",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "63-daagse horizon",
+      "source": "scripts/freeze_results.py startvariantie-sweep",
+      "note": "bij een startvolatiliteit van 14.8%"
+    },
+    "buffer_99_range_high": {
+      "value": 0.749,
+      "unit": "fractie van notioneel",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "63-daagse horizon",
+      "source": "scripts/freeze_results.py startvariantie-sweep",
+      "note": "bij een startvolatiliteit van 41.7%"
+    },
+    "buffer_99_at_long_run_vol": {
+      "value": 0.339,
+      "unit": "fractie van notioneel",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "63-daagse horizon",
+      "source": "scripts/freeze_results.py startvariantie-sweep",
+      "note": "startvolatiliteit gelijk aan het langetermijngemiddelde"
+    },
+    "es_99_garch_t": {
+      "value": 0.4843,
+      "unit": "fractie van notioneel",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "63-daagse horizon",
+      "source": "simulate.simulate_garch"
+    },
+    "buffer_99_gbm_normal": {
+      "value": 0.2605,
+      "unit": "fractie van notioneel",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "63-daagse horizon",
+      "source": "simulate.simulate_gbm"
+    },
+    "coverage_of_5pct_rule": {
+      "value": 0.4259,
+      "unit": "fractie van de paden",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "63-daagse horizon",
+      "source": "simulate.simulate_garch"
+    },
+    "coverage_of_10pct_rule": {
+      "value": 0.681,
+      "unit": "fractie van de paden",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "63-daagse horizon",
+      "source": "simulate.simulate_garch"
+    },
+    "df_sensitivity_spread_full_range": {
+      "value": 2.5,
+      "unit": "procentpunt",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/freeze_results.py df-sweep",
+      "note": "df van 3 tot 8, 100k paden, common random numbers"
+    },
+    "n_quarters_tested": {
+      "value": 78,
+      "unit": "niet-overlappende kwartalen",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.compare_buffer_rules",
+      "note": "94 passen er rekenkundig in; 78 resteren na 1000 dagen burn-in"
+    },
+    "expected_breaches_at_99pct": {
+      "value": 0.78,
+      "unit": "aantal",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.evaluate_coverage",
+      "note": "hieronder is elke toets onderbemeten"
+    },
+    "breaches_garch_t": {
+      "value": 1,
+      "unit": "aantal",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.evaluate_coverage"
+    },
+    "kupiec_p_garch_t": {
+      "value": 0.8104,
+      "unit": "p-waarde",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.kupiec_pof_test"
+    },
+    "mean_buffer_garch_t": {
+      "value": 0.2846,
+      "unit": "fractie van notioneel",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.evaluate_coverage"
+    },
+    "breaches_vast_25pct": {
+      "value": 1,
+      "unit": "aantal",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.evaluate_coverage"
+    },
+    "kupiec_p_vast_25pct": {
+      "value": 0.8104,
+      "unit": "p-waarde",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.kupiec_pof_test"
+    },
+    "mean_buffer_vast_25pct": {
+      "value": 0.25,
+      "unit": "fractie van notioneel",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.evaluate_coverage"
+    },
+    "breaches_rolling_p99": {
+      "value": 6,
+      "unit": "aantal",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.evaluate_coverage"
+    },
+    "kupiec_p_rolling_p99": {
+      "value": 0.0001,
+      "unit": "p-waarde",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.kupiec_pof_test"
+    },
+    "mean_buffer_rolling_p99": {
+      "value": 0.2159,
+      "unit": "fractie van notioneel",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.evaluate_coverage"
+    },
+    "breaches_ewma_094": {
+      "value": 5,
+      "unit": "aantal",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.evaluate_coverage"
+    },
+    "kupiec_p_ewma_094": {
+      "value": 0.0013,
+      "unit": "p-waarde",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.kupiec_pof_test"
+    },
+    "mean_buffer_ewma_094": {
+      "value": 0.2268,
+      "unit": "fractie van notioneel",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.evaluate_coverage"
+    },
+    "effective_sample_size_volatility": {
+      "value": 42,
+      "unit": "waarnemingen",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "placebo.effective_sample_size",
+      "note": "na correctie voor autocorrelatie in 21-daagse realised vol"
+    },
+    "buffer_spread_across_end_dates": {
+      "value": 40.6,
+      "unit": "procentpunt",
+      "sample_period": "einddatums 2025-09-30 tot 2026-10-13",
+      "frequency": "kwartaal",
+      "source": "scripts/meet_datadrift.py",
+      "note": "zelfde code, alleen een andere einddatum"
+    },
+    "buffer_start_state_r_squared": {
+      "value": 0.988,
+      "unit": "dimensieloos",
+      "sample_period": "6 einddatums",
+      "frequency": "kwartaal",
+      "source": "scripts/meet_datadrift.py",
+      "note": "aandeel van de bufferspreiding verklaard door de startvolatiliteit"
+    },
+    "hedge_n_observations": {
+      "value": 5959,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_corr_gold_sp500": {
+      "value": 0.0284,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_corr_gold_sp500_ci_low": {
+      "value": -0.0151,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_corr_gold_sp500_ci_high": {
+      "value": 0.0721,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_corr_gold_dxy": {
+      "value": -0.4041,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_corr_gold_dxy_ci_low": {
+      "value": -0.4314,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_corr_gold_dxy_ci_high": {
+      "value": -0.3749,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_corr_gold_sp500_stress_2008": {
+      "value": -0.0328,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_corr_gold_sp500_stress_maart": {
+      "value": 0.072,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_corr_gold_sp500_stress_2022": {
+      "value": 0.0253,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_corr_gold_sp500_calm": {
+      "value": 0.0386,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_corr_gold_sp500_volatile": {
+      "value": 0.0261,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_hedge_ratio_sp500_hedged_with_gold_futures": {
+      "value": 0.0289,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_variance_reduction_sp500_hedged_with_gold_futures": {
+      "value": 0.0008,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_hedge_ratio_dxy_hedged_with_gold_futures": {
+      "value": -0.1679,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_variance_reduction_dxy_hedged_with_gold_futures": {
+      "value": 0.1633,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_hedge_ratio_gold_futures_hedged_with_dxy": {
+      "value": -0.9727,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_variance_reduction_gold_futures_hedged_with_dxy": {
+      "value": 0.1633,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_hedge_ratio_oos_sp500_hedged_with_gold_futures": {
+      "value": 0.0094,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_variance_reduction_oos_sp500_hedged_with_gold_futures": {
+      "value": 0.0009,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_hedge_ratio_oos_dxy_hedged_with_gold_futures": {
+      "value": -0.1765,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_variance_reduction_oos_dxy_hedged_with_gold_futures": {
+      "value": 0.1429,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_hedge_ratio_oos_gold_futures_hedged_with_dxy": {
+      "value": -1.0019,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_variance_reduction_oos_gold_futures_hedged_with_dxy": {
+      "value": 0.1446,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_0pct_gold_annual_vol": {
+      "value": 0.1867,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_0pct_gold_max_drawdown": {
+      "value": -0.5678,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_0pct_gold_cvar_5pct": {
+      "value": -0.029,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_0pct_gold_annual_return": {
+      "value": 0.0943,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_5pct_gold_annual_vol": {
+      "value": 0.1778,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_5pct_gold_max_drawdown": {
+      "value": -0.5443,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_5pct_gold_cvar_5pct": {
+      "value": -0.0276,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_5pct_gold_annual_return": {
+      "value": 0.0951,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_10pct_gold_annual_vol": {
+      "value": 0.1695,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_10pct_gold_max_drawdown": {
+      "value": -0.5195,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_10pct_gold_cvar_5pct": {
+      "value": -0.0262,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_10pct_gold_annual_return": {
+      "value": 0.0959,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_20pct_gold_annual_vol": {
+      "value": 0.1548,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_20pct_gold_max_drawdown": {
+      "value": -0.4692,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_20pct_gold_cvar_5pct": {
+      "value": -0.0237,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_portfolio_20pct_gold_annual_return": {
+      "value": 0.0976,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_march2020_unhedged_max_drawdown": {
+      "value": -0.3392,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_march2020_10pct_gold_max_drawdown": {
+      "value": -0.313,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_roll_test_p_mean": {
+      "value": 0.7278,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_roll_test_p_variance": {
+      "value": 0.2194,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_roll_window_n": {
+      "value": 633,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_financing_cost_quarterly_buffer_25pct": {
+      "value": 0.2425,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_financing_cost_quarterly_buffer_34pct": {
+      "value": 0.3298,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    },
+    "hedge_roll_cost_quarterly_bps": {
+      "value": 4.0,
+      "unit": "zie naam",
+      "sample_period": "2003-01-03 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scripts/analyse_hedge.py"
+    }
+  }
+}

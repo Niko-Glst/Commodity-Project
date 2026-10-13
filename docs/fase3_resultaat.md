@@ -100,25 +100,38 @@ uit de rente van vandaag zou look-ahead bias zijn.
 
 ### De uitkomst
 
+> **Deze tabel is gecorrigeerd.** Een eerdere versie rapporteerde een
+> directional accuracy van 43,8% en een R² van −0,0396. Die kwamen uit een
+> aanroep met `horizon=1, step=21`, waardoor er 145 LOSSE dagen werden
+> voorspeld in plaats van 3.024 aaneengesloten. Zie
+> [AUDIT.md](../AUDIT.md) sectie 9 en de uitleg onderaan.
+
 | Model | RMSE | Directional accuracy | R² out-of-sample | vs. benchmark |
 |---|---|---|---|---|
-| **random_walk** | **0,010081** | n.v.t. | +0,0000 | — |
-| historisch | 0,010076 | 50,7% | +0,0009 | −0,05% |
-| **ols** | **0,010279** | **43,8%** | **−0,0396** | **+1,96%** |
-| **ridge** | **0,010279** | **43,8%** | **−0,0396** | **+1,96%** |
+| **random_walk** | **0,010834** | n.v.t. | +0,0000 | — |
+| historisch | 0,010834 | 52,2% | −0,0001 | +0,01% |
+| **ols** | **0,010774** | **51,9%** | **+0,0110** | **−0,55%** |
+| **ridge** | **0,010774** | **51,9%** | **+0,0110** | **−0,55%** |
+
+*N = 3.024 out-of-sample dagen, 144 vensters, 2014-2026.*
 
 Drie dingen om te lezen:
 
-**OLS en ridge zijn 1,96% slechter dan nul voorspellen.** De out-of-sample R² is
-negatief, wat letterlijk betekent: je was beter af met niets doen.
+**OLS is 0,55% beter dan nul voorspellen — maar niet significant.** De
+Diebold-Mariano-toets geeft p = 0,170. Bij 3.024 dagen is een verschil van
+0,55% in RMSE niet van toeval te onderscheiden.
 
-**Directional accuracy 43,8%** — onder de 50%. Het model raadt de richting
-slechter dan een munt opgooien. Bij 145 vensters is dat geen bewijs van een
-omgekeerd signaal, maar het is zeker geen voorspelkracht.
+**Directional accuracy 51,9%** — nét boven de munt. Exact: 1.562 van 3.024
+dagen correct. De binomiaaltoets tegen 50% geeft **p = 0,072**: niet
+significant op 5%.
 
-**Het "historisch" model wint met 0,05%.** Dat is geen prestatie. Het gemiddelde
-dagrendement is ongeveer 0,04%, dus dat model voorspelt vrijwel hetzelfde als
-nul. Het verschil is afrondingsruis.
+**Het "historisch" model doet niets.** Het gemiddelde dagrendement is ongeveer
+0,04%, dus dat model voorspelt vrijwel nul. Het verschil met de random walk is
+afrondingsruis.
+
+**De conclusie is dus niet "slechter dan een munt" maar "niet te
+onderscheiden van nul".** Dat is een zwakkere uitspraak dan de oude tabel
+suggereerde, en een eerlijkere.
 
 ### Is het verschil significant? (Diebold-Mariano)
 
@@ -128,10 +141,16 @@ verschilreeks zelf geautocorreleerd is.
 
 | Vergelijking | Statistiek | p-waarde | Conclusie |
 |---|---|---|---|
-| OLS vs. random walk | +1,36 | 0,173 | geen significant verschil |
-| Ridge vs. random walk | +1,36 | 0,173 | geen significant verschil |
+| OLS vs. random walk | −1,37 | 0,170 | geen significant verschil |
+| Ridge vs. random walk | −1,37 | 0,170 | geen significant verschil |
 
-De modellen zijn dus niet *aantoonbaar* slechter — maar zeker niet beter.
+Het teken is nu negatief (OLS heeft een iets LAGERE fout), maar de p-waarde
+is vrijwel hetzelfde als voorheen. Dat is het hele punt: de toets zei ook in
+de oude versie al "geen significant verschil", en die conclusie staat
+overeind. Alleen de richting van het niet-significante verschil is omgeklapt.
+
+**Dat de p-waarde niet veranderde terwijl het teken wel omsloeg, is het
+duidelijkste signaal dat er in beide gevallen ruis gemeten werd.**
 
 ---
 
@@ -259,3 +278,72 @@ Gemeten op verzonnen data:
 
 In de echte data zijn rentes en de dollarindex sterk persistent, en daar komt de
 gemeten 1,66–1,81 dus vandaan. Beide gevallen staan nu als test vastgelegd.
+
+---
+
+## En iets wat ik veel langer verkeerd had
+
+De getallen bovenaan deze pagina zijn gecorrigeerd. De oude versie zei
+directional accuracy **43,8%** en R² **−0,0396**, en daarop rustte de hele
+claim "richting is niet voorspelbaar". Die getallen waren verkeerd.
+
+### Wat er misging
+
+De aanroep stond hier als:
+
+```python
+walk_forward_validate(target, drivers, min_train=1000, step=21)
+```
+
+Zonder `horizon` neemt de functie `horizon=1`. Dat betekent: voorspel één dag,
+spring dan 21 dagen vooruit, voorspel weer één dag. Je houdt **145 losse
+dagen** over, met tussen elke twee dagen een gat van drie weken.
+
+Met `horizon=21, step=21` sluiten de vensters wél aan en krijg je **3.024
+aaneengesloten dagen**.
+
+| | n | R² | Accuracy | vs. random walk |
+|---|---|---|---|---|
+| `horizon=1, step=21` (fout) | 145 | −0,0396 | 43,8% | +1,96% |
+| `horizon=21, step=21` (goed) | 3.024 | +0,0110 | 51,9% | −0,55% |
+
+### Waarom het zo lang onopgemerkt bleef
+
+Drie redenen, en ze zijn alle drie leerzaam:
+
+1. **Niets crashte.** De functie deed precies wat hem gevraagd werd.
+2. **Het getal was plausibel.** Een R² van −0,04 past perfect bij het verhaal
+   dat ik aan het vertellen was. Een resultaat dat je verwacht, controleer je
+   minder streng — en dat is precies waarom ik het niet zag.
+3. **Het reproduceerde perfect.** Elke keer dat ik dit script draaide kwam er
+   −0,0396 uit. Ik beschouwde dat als bevestiging, maar reproduceerbaarheid en
+   correctheid zijn verschillende dingen. Een script dat zijn eigen fout
+   betrouwbaar herhaalt, slaagt voor de eerste toets en zakt voor de tweede.
+
+Het kwam pas boven toen `scripts/freeze_results.py` als onafhankelijke
+implementatie andere getallen gaf. **Twee implementaties die het oneens zijn,
+vinden fouten die één implementatie met honderd runs niet vindt.**
+
+Ironisch detail: deze fout stond al in
+[WALKTHROUGH.md](WALKTHROUGH.md) beschreven als voorbeeld van een bug die
+*gevonden en opgelost* was. Hij was opgelost in `pipeline.py` en nooit in dit
+script — en dit script maakte alle gepubliceerde fase 3-getallen.
+
+### Wat de conclusie nu is
+
+Richting blijft onvoorspelbaar, maar om een andere reden dan ik dacht:
+
+- **oud:** "43,8% accuracy, slechter dan een munt opgooien"
+- **nieuw:** "51,9% accuracy, p = 0,072; R² +0,011, Diebold-Mariano p = 0,170
+  — niet te onderscheiden van nul"
+
+De oude getallen **overdreven** het negatieve resultaat. Dat is in zekere zin
+erger dan een te positief resultaat: ik had een sterkere conclusie dan mijn
+data toestond, en die kwam uit een bug.
+
+### Wat ik eraan veranderd heb
+
+`walk_forward_validate` weigert nu `horizon < step` met een foutmelding, tenzij
+je expliciet `allow_gaps=True` meegeeft. De standaardwaarde van `horizon` is
+gelijkgetrokken met die van `step`. Drie tests leggen dat vast, waaronder één
+die controleert dat de standaardinstellingen een doorlopende reeks opleveren.

@@ -1,0 +1,74 @@
+{
+  "rows": [
+    {
+      "einddatum": "2025-09-30",
+      "N": 5713,
+      "laatste_prijs": 3873.2,
+      "ann_vol_pct": 17.69,
+      "persistentie": 0.995,
+      "df": 4.89,
+      "vol_ratio": 0.67,
+      "startvol_pct": 16.1,
+      "buffer_99_pct": 25.3
+    },
+    {
+      "einddatum": "2025-12-31",
+      "N": 5777,
+      "laatste_prijs": 4341.1,
+      "ann_vol_pct": 17.8,
+      "persistentie": 0.9952,
+      "df": 4.82,
+      "vol_ratio": 1.31,
+      "startvol_pct": 23.1,
+      "buffer_99_pct": 35.9
+    },
+    {
+      "einddatum": "2026-03-31",
+      "N": 5838,
+      "laatste_prijs": 4647.6,
+      "ann_vol_pct": 18.2,
+      "persistentie": 0.9959,
+      "df": 4.76,
+      "vol_ratio": 3.16,
+      "startvol_pct": 38.2,
+      "buffer_99_pct": 65.9
+    },
+    {
+      "einddatum": "2026-06-30",
+      "N": 5900,
+      "laatste_prijs": 4038.5,
+      "ann_vol_pct": 18.28,
+      "persistentie": 0.9956,
+      "df": 4.78,
+      "vol_ratio": 1.79,
+      "startvol_pct": 28.2,
+      "buffer_99_pct": 46.4
+    },
+    {
+      "einddatum": "2026-09-30",
+      "N": 5964,
+      "laatste_prijs": 4186.7,
+      "ann_vol_pct": 18.33,
+      "persistentie": 0.9956,
+      "df": 4.79,
+      "vol_ratio": 1.17,
+      "startvol_pct": 22.6,
+      "buffer_99_pct": 37.0
+    },
+    {
+      "einddatum": "2026-10-13",
+      "N": 5973,
+      "laatste_prijs": 4202.5,
+      "ann_vol_pct": 18.32,
+      "persistentie": 0.9954,
+      "df": 4.79,
+      "vol_ratio": 0.96,
+      "startvol_pct": 20.2,
+      "buffer_99_pct": 32.6
+    }
+  ],
+  "buffer_spread_pp": 40.6,
+  "buffer_min_pct": 25.3,
+  "buffer_max_pct": 65.9,
+  "frozen_end_date": "2026-09-30"
+}

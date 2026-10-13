@@ -44,9 +44,9 @@ en 3.024 handelsdagen:
 
 | Maat | Waarde |
 |---|---|
-| Directional accuracy | **43,8%** (onder munt-opgooien) |
-| Out-of-sample R² | **−0,04** (slechter dan nul voorspellen) |
-| RMSE tegenover random walk | **+1,96%** (slechter) |
+| Directional accuracy | **51,9%** (p = 0,072, niet significant) |
+| Out-of-sample R² | **+0,011** (statistisch niet van nul te onderscheiden) |
+| RMSE tegenover random walk | **−0,55%** (Diebold-Mariano p = 0,170) |
 | Diebold-Mariano | geen significant verschil |
 
 ### De backtest die dat bevestigt
@@ -109,7 +109,7 @@ risicoberekening voor je eigen positie.
 
 | Bevinding | Bewijs |
 |---|---|
-| Richting onvoorspelbaar | R² out-of-sample −0,04 |
+| Richting onvoorspelbaar | R² out-of-sample +0,011, DM p = 0,170 |
 | **Grootte wél voorspelbaar** | **GARCH-persistentie 0,9956; halfwaardetijd 156 dagen** |
 | Dikke staarten | kurtosis 6,05; 79 dagen buiten 3σ waar normaal 16 voorspelt |
 | Model correct gekalibreerd | Kupiec: 5 overschrijdingen tegen 5 verwacht (p = 0,98) |

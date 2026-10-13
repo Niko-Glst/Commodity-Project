@@ -179,9 +179,20 @@ def show_walk_forward(target: pd.Series, drivers: pd.DataFrame) -> dict:
         "  ridge        geregulariseerd, tegen multicollineariteit"
     )
 
-    result = walk_forward_validate(target, drivers, min_train=1000, step=21)
+    # horizon EN step op 21. Dit stond hier eerder als alleen step=21, en dan
+    # neemt de functie horizon=1: per venster één dag voorspellen en twintig
+    # overslaan. Dat levert 145 losse dagen in plaats van 3.024
+    # aaneengesloten, en op zo'n verzameling is de R-kwadraat ruis.
+    #
+    # Die fout zat hier terwijl pipeline.py hem al niet meer had, en alle
+    # gepubliceerde fase 3-getallen kwamen uit dit script. Gevonden doordat
+    # freeze_results.py als onafhankelijke implementatie andere uitkomsten
+    # gaf. Zie AUDIT.md sectie 9.
+    result = walk_forward_validate(
+        target, drivers, min_train=1000, horizon=21, step=21
+    )
 
-    print(f"\n{result.n_folds} vensters, horizon {result.horizon} dag.\n")
+    print(f"\n{result.n_folds} vensters, horizon {result.horizon} dagen.\n")
     display = result.metrics.copy()
     display["rmse"] = display["rmse"].map(lambda v: f"{v:.6f}")
     display["mae"] = display["mae"].map(lambda v: f"{v:.6f}")
