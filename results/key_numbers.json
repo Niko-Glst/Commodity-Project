@@ -1,8 +1,8 @@
 {
   "_manifest": {
-    "frozen_at": "2026-10-13T15:22:36.691373+00:00",
+    "frozen_at": "2026-10-13T16:33:03.785403+00:00",
     "analysis_end_date": "2026-09-30",
-    "git_commit": "e060126ffe3cb8eeb59c8b458d180a5fd4c429a8",
+    "git_commit": "e375c8737958f48279a09385049d6140981c1992",
     "git_dirty": true,
     "seed": 42,
     "n_paths": 20000,
@@ -151,6 +151,51 @@
       "sample_period": "2003-01-02 tot 2026-09-30",
       "frequency": "dagelijks",
       "source": "models.walk_forward_validate"
+    },
+    "diebold_mariano_statistic": {
+      "value": -1.371,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "21-daagse vensters",
+      "source": "models.diebold_mariano"
+    },
+    "diebold_mariano_p": {
+      "value": 0.1705,
+      "unit": "p-waarde",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "21-daagse vensters",
+      "source": "models.diebold_mariano",
+      "note": "H0 = gelijke voorspelfout als de random walk"
+    },
+    "directional_hits_ols": {
+      "value": 1562,
+      "unit": "dagen correct",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "(sign(pred) == sign(actual)).sum()"
+    },
+    "directional_accuracy_binomial_p": {
+      "value": 0.0718,
+      "unit": "p-waarde",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "scipy.stats.binomtest",
+      "note": "H0 = 50% (munt opgooien), tweezijdig"
+    },
+    "in_sample_r2": {
+      "value": 0.1867,
+      "unit": "dimensieloos",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "models.fit_ols_newey_west",
+      "note": "zelfde drivers, zelfde data, maar zonder out-of-sample toets"
+    },
+    "in_sample_n": {
+      "value": 5147,
+      "unit": "dagen",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "dagelijks",
+      "source": "models.fit_ols_newey_west"
     },
     "annual_turnover": {
       "value": 181.0,

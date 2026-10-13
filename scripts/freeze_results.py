@@ -43,7 +43,11 @@ from scipy import stats as sps  # noqa: E402
 from goldmodel.backtest import CostModel, run_backtest, sharpe_significance  # noqa: E402
 from goldmodel.config import ALL_SERIES, ANALYSIS_END_DATE  # noqa: E402
 from goldmodel.data.loader import DataLoader  # noqa: E402
-from goldmodel.models import walk_forward_validate  # noqa: E402
+from goldmodel.models import (  # noqa: E402
+    diebold_mariano,
+    fit_ols_newey_west,
+    walk_forward_validate,
+)
 from goldmodel.placebo import effective_sample_size  # noqa: E402
 from goldmodel.signal import (  # noqa: E402
     SignalSettings,
@@ -248,6 +252,66 @@ def main() -> int:
         int(walk_forward.n_folds),
         unit="vensters",
         source="models.walk_forward_validate",
+    )
+
+    # Significantie van de voorspelkracht. Zonder deze twee getallen is de
+    # R-kwadraat van +0,011 niet te interpreteren: hij ziet er positief uit,
+    # maar is niet van nul te onderscheiden.
+    dm = diebold_mariano(
+        walk_forward.actuals,
+        walk_forward.predictions["ols"],
+        walk_forward.predictions["random_walk"],
+    )
+    record(
+        "diebold_mariano_statistic",
+        round(float(dm["statistic"]), 3),
+        unit="dimensieloos",
+        source="models.diebold_mariano",
+        frequency="21-daagse vensters",
+    )
+    record(
+        "diebold_mariano_p",
+        round(float(dm["p_value"]), 4),
+        unit="p-waarde",
+        source="models.diebold_mariano",
+        frequency="21-daagse vensters",
+        note="H0 = gelijke voorspelfout als de random walk",
+    )
+    hits = int(
+        (np.sign(walk_forward.predictions["ols"]) == np.sign(walk_forward.actuals)).sum()
+    )
+    record(
+        "directional_hits_ols",
+        hits,
+        unit="dagen correct",
+        source="(sign(pred) == sign(actual)).sum()",
+    )
+    record(
+        "directional_accuracy_binomial_p",
+        round(float(sps.binomtest(hits, len(walk_forward.actuals), 0.5).pvalue), 4),
+        unit="p-waarde",
+        source="scipy.stats.binomtest",
+        note="H0 = 50% (munt opgooien), tweezijdig",
+    )
+
+    # In-sample R-kwadraat, om tegen de out-of-sample te kunnen zetten. Het
+    # verschil tussen die twee (18,7% tegen 1,1%) is de kern van fase 3.
+    in_sample_X = changes[available].dropna()
+    in_sample_y = gold.loc[gold.index.intersection(in_sample_X.index)]
+    in_sample_X = in_sample_X.loc[in_sample_y.index]
+    ols_fit = fit_ols_newey_west(in_sample_y, in_sample_X)
+    record(
+        "in_sample_r2",
+        round(float(ols_fit.r_squared), 4),
+        unit="dimensieloos",
+        source="models.fit_ols_newey_west",
+        note="zelfde drivers, zelfde data, maar zonder out-of-sample toets",
+    )
+    record(
+        "in_sample_n",
+        int(ols_fit.n_observations),
+        unit="dagen",
+        source="models.fit_ols_newey_west",
     )
 
     # -- backtest ---------------------------------------------------------
