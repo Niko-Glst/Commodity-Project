@@ -319,7 +319,16 @@ class GarchParameters:
         omega: Basisniveau van de variantie.
         alpha: Gewicht van de schok van gisteren.
         beta: Gewicht van de volatiliteit van gisteren.
-        degrees_of_freedom: Vrijheidsgraden van de t-verdeling voor de schokken.
+        degrees_of_freedom: Vrijheidsgraden van de t-verdeling voor de schokken,
+            geschat met maximum likelihood SAMEN met de GARCH-parameters.
+
+            Dat is iets anders dan een t-verdeling op de ruwe rendementen
+            fitten. Die laatste ziet de dikke staarten van clustering EN van
+            echte staartdikte door elkaar, en komt daardoor op een te lage
+            waarde uit (3,5 tegenover 4,8). Het verschil is materieel: onder
+            df = 4 is de populatiekurtosis oneindig.
+        degrees_of_freedom_se: Standaardfout van die schatting. Zonder dit
+            getal kun je niet zeggen hoe hard de staartaanname is.
         last_variance: De geschatte variantie op de laatste dag van de
             steekproef. Dit is het startpunt van de simulatie, en het is wat
             de simulatie afhankelijk maakt van de HUIDIGE markt.
@@ -333,6 +342,7 @@ class GarchParameters:
     degrees_of_freedom: float
     last_variance: float
     long_run_variance: float
+    degrees_of_freedom_se: float = float("nan")
 
     @property
     def persistence(self) -> float:
@@ -385,8 +395,13 @@ def fit_garch(returns: pd.Series, *, distribution: str = "t") -> GarchParameters
 
     if distribution == "t":
         degrees_of_freedom = float(parameters["nu"])
+        # De standaardfout hoort bij de schatting. Een df van 4,8 met een
+        # standaardfout van 0,3 is iets heel anders dan dezelfde 4,8 met een
+        # standaardfout van 2.
+        degrees_of_freedom_se = float(fitted.std_err["nu"])
     else:
         degrees_of_freedom = float("inf")
+        degrees_of_freedom_se = float("nan")
 
     last_variance = float(fitted.conditional_volatility.iloc[-1] ** 2) / 10_000.0
     persistence = alpha + beta
@@ -399,6 +414,7 @@ def fit_garch(returns: pd.Series, *, distribution: str = "t") -> GarchParameters
         degrees_of_freedom=degrees_of_freedom,
         last_variance=last_variance,
         long_run_variance=long_run,
+        degrees_of_freedom_se=degrees_of_freedom_se,
     )
 
 

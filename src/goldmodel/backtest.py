@@ -102,9 +102,16 @@ class BacktestResult:
     metrics: dict = field(default_factory=dict)
 
     def equity_curve(self, *, net: bool = True) -> pd.Series:
-        """Cumulatieve waardeontwikkeling, startend op 1."""
+        """Cumulatieve waardeontwikkeling, startend op 1.
+
+        De reeks bestaat uit LOG-rendementen, dus samenstellen gebeurt via
+        ``exp(cumsum)`` en niet via ``(1+r).cumprod()``. Dat laatste behandelt
+        een log-rendement alsof het een enkelvoudig rendement is, en dat
+        verschil loopt over 23 jaar op tot honderden procentpunten. Zie de
+        toelichting in ``_performance_metrics``.
+        """
         returns = self.net_returns if net else self.gross_returns
-        return (1.0 + returns).cumprod()
+        return np.exp(returns.dropna().cumsum())
 
 
 def _performance_metrics(returns: pd.Series, *, label: str = "") -> dict:
@@ -136,7 +143,18 @@ def _performance_metrics(returns: pd.Series, *, label: str = "") -> dict:
     # Standaardfout van de Sharpe-ratio, eerste orde: 1/sqrt(jaren).
     sharpe_standard_error = 1.0 / np.sqrt(years) if years > 0 else float("inf")
 
-    equity = (1.0 + clean).cumprod()
+    # De reeks bestaat uit LOG-rendementen. Samenstellen gaat dan via
+    # exp(cumsum), niet via (1+r).cumprod().
+    #
+    # Waarom dit uitmaakt: (1+r).cumprod() behandelt een log-rendement alsof
+    # het enkelvoudig is. Over 23 jaar goud geeft dat 714% totaalrendement
+    # tegen de werkelijke 1.114% ($346 -> $4.203), en een maximale drawdown
+    # van -48,4% tegen de correcte -44,4%.
+    #
+    # Let op welke maten dit NIET raakt: annual_return, annual_volatility en
+    # sharpe komen rechtstreeks uit het gemiddelde en de standaardafwijking
+    # van de dagreeks en gebruiken deze curve niet.
+    equity = np.exp(clean.cumsum())
     drawdown = equity / equity.cummax() - 1.0
 
     return {

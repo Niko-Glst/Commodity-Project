@@ -59,12 +59,26 @@ class SignalSettings:
     In ``backtest.py`` wordt de drempel daarom NIET geoptimaliseerd; hij staat
     vast op een waarde die vooraf gekozen is, en de gevoeligheid ervoor wordt
     apart gerapporteerd.
+
+    Over de no-trade band
+    ---------------------
+    ``no_trade_band`` is standaard 0,0: uit. Staat hij aan, dan blijft de
+    positie ongewijzigd zolang de gewenste positie minder dan deze fractie
+    afwijkt van de huidige. Dat onderdrukt het voortdurend bijschaven dat de
+    'linear'-methode veroorzaakt.
+
+    Dit is een OPTIE, geen correctie. Zie ``docs/RESULTS.md``: de band is één
+    keer gedraaid om de omvang van het kosteneffect te laten zien, en er is
+    geen waarde gezocht die de uitkomst gunstig maakt. Het onderliggende
+    signaal blijft waardeloos, en een lagere omzet maakt een nulsignaal niet
+    winstgevend — alleen goedkoper.
     """
 
     method: str = "linear"
     max_position: float = 1.0
     threshold_sigma: float = 0.5
     scale_by: str = "prediction_std"
+    no_trade_band: float = 0.0
 
 
 def predictions_to_positions(
@@ -130,7 +144,60 @@ def predictions_to_positions(
             "Kies 'sign', 'linear' of 'threshold'."
         )
 
-    return pd.Series(positions, index=predictions.index, name="position")
+    positions = pd.Series(positions, index=predictions.index, name="position")
+
+    if settings.no_trade_band > 0:
+        positions = apply_no_trade_band(positions, settings.no_trade_band)
+
+    return positions
+
+
+def apply_no_trade_band(positions: pd.Series, band: float) -> pd.Series:
+    """Houdt de positie vast zolang de gewenste wijziging klein is.
+
+    Waarom dit nodig kan zijn
+    -------------------------
+    De 'linear'-methode schaalt de positie proportioneel aan de voorspelling.
+    Die voorspelling verandert elke dag een beetje, dus de positie ook — ook
+    als er niets zinnigs veranderd is. Het resultaat is een omzet van 181x per
+    jaar, waarvan het grootste deel bestaat uit minieme aanpassingen die hun
+    eigen transactiekosten niet waard zijn.
+
+    De band legt een drempel op de WIJZIGING in plaats van op het signaal:
+    verandert de gewenste positie minder dan ``band``, dan gebeurt er niets.
+
+    Let op wat dit niet is
+    ----------------------
+    Dit maakt het signaal niet beter. Het maakt handelen goedkoper. Een
+    signaal dat bruto exact nul oplevert, levert met minder kosten nog steeds
+    ongeveer nul op — alleen minder negatief. Dat is precies waarom deze band
+    als optie bestaat en niet als standaardinstelling.
+
+    Argumenten:
+        positions: De gewenste positie per dag, zonder band.
+        band: Minimale wijziging voordat er gehandeld wordt, in dezelfde
+            eenheid als de positie. 0,10 betekent: pas handelen als de
+            gewenste positie meer dan 0,10 afwijkt van de huidige.
+
+    Geeft terug:
+        De werkelijk aangehouden positie per dag.
+    """
+    if band <= 0:
+        return positions
+
+    desired = positions.to_numpy(dtype=float)
+    held = np.empty_like(desired)
+
+    # De eerste dag is er nog geen positie om aan vast te houden.
+    current = desired[0] if len(desired) else 0.0
+    held[0] = current
+
+    for i in range(1, len(desired)):
+        if abs(desired[i] - current) >= band:
+            current = desired[i]
+        held[i] = current
+
+    return pd.Series(held, index=positions.index, name="position")
 
 
 def turnover(positions: pd.Series) -> pd.Series:

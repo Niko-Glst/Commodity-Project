@@ -7,6 +7,21 @@ Monte Carlo margin sizing.**
 
 ---
 
+This is a Python project that tests whether public macro data can predict gold
+prices, finds that it cannot, and then measures the one thing that *is*
+predictable — how volatile the price will be — to answer a practical question:
+how much cash a hedger must hold against margin calls. It is built around
+validation rather than results. Every number carries its sample size, the main
+claim is tested against three naive benchmarks and **loses to one of them**, and
+that outcome is reported rather than tuned away. About 7,700 lines of library
+code, 3,500 lines of tests (189 of them) and 6,300 lines of runnable scripts;
+written as a learning project, and readable as one.
+
+**Start here:** [docs/WALKTHROUGH.md](docs/WALKTHROUGH.md) (5 minutes) or
+[docs/RESULTS.md](docs/RESULTS.md) (all the numbers).
+
+---
+
 ## The question this answers
 
 > I hold a short gold futures position as a hedge for one quarter. How much
@@ -122,6 +137,18 @@ The placebo (positions shuffled through time, 200 runs) places the real result
 at the 39th percentile. The signal produces exactly nothing, which is what Phase
 3 predicted.
 
+> **Footnote on the 181× turnover.** A no-trade band is available as a config
+> option (`NO_TRADE_BAND` in `scripts/pipeline.py`, default `0.0` = off), run
+> once across bands 0.05–1.0 with no value selected to improve the outcome. It
+> barely helps: at a band of 0.10 turnover falls only from 181 to 180. The
+> reason is itself the finding — the median daily position change is 0.61 and
+> the position flips sign on **49% of days**, with position autocorrelation
+> −0.025. This is not small adjustments being jittered; it is a near-random
+> signal genuinely wanting a different position every day, and no band fixes
+> that. (The drivers are daily market series, not stale monthly macro: they
+> change on 77–100% of days.) Full table in
+> [docs/RESULTS.md](docs/RESULTS.md).
+
 ### Phase 4 — Monte Carlo and margin sizing
 
 Three models, each justified by an earlier measurement:
@@ -176,7 +203,34 @@ informative:
 
 - **Lower bound** (constant volatility): ~26%
 - **Historically observed**: 29.3%
-- **Upper bound** (GARCH, best calibrated): 34.5%
+- **Upper bound** (GARCH, fattest tails): 34.5%
+
+### Does GARCH beat a rule of thumb? No.
+
+The range above is only worth having if the model that produces it outperforms
+something simpler. Tested over 78 non-overlapping quarters against three
+benchmarks — full table in [docs/RESULTS.md](docs/RESULTS.md):
+
+| Model | Breaches | Expected | Kupiec p | Christoffersen p | Mean buffer |
+|---|---|---|---|---|---|
+| GARCH-t | 1 | 0.78 | 0.810 | 0.871 | 28.5% |
+| **Fixed 25%** | 1 | 0.78 | 0.810 | 0.871 | **25.0%** |
+| Rolling p99 (2y) | 6 | 0.78 | 0.000 | 0.314 | 21.6% |
+| EWMA λ=0.94 | 5 | 0.78 | 0.001 | 0.405 | 22.7% |
+
+GARCH-t and the fixed rule tie on breaches; the fixed rule is 3.5 points
+cheaper. **On coverage and cost together, the rule of thumb wins.** Parameters
+were not adjusted to change that.
+
+The honest caveat cuts both ways: at 78 quarters you expect 0.78 breaches, so
+the test cannot really separate these models at all. Every row is flagged
+`UNDERPOWERED`. What the benchmark rules out is a *strong* claim for GARCH —
+not a weak one.
+
+**Which uncertainty dominates the 26–34% range?** Model choice, by roughly 4:1.
+Varying the t-distribution's degrees of freedom across its entire plausible
+range [3, 8] moves the buffer 2.3 points; switching between constant volatility
+and GARCH moves it 8.5.
 
 ### The qualification that reframes the result
 
@@ -291,6 +345,8 @@ output/figures/      23 figures, 20 in the main analysis (gitignored)
 
 | Document | Contents |
 |---|---|
+| [WALKTHROUGH.md](docs/WALKTHROUGH.md) | **five-minute guided tour — start here** |
+| [RESULTS.md](docs/RESULTS.md) | **every number, two pages, no code** |
 | [HET_HELE_VERHAAL.md](docs/HET_HELE_VERHAAL.md) | the full narrative, zero to now |
 | [fase2_resultaat.md](docs/fase2_resultaat.md) | stationarity, correlations, stability |
 | [fase3_resultaat.md](docs/fase3_resultaat.md) | regression and walk-forward validation |
@@ -302,7 +358,8 @@ output/figures/      23 figures, 20 in the main analysis (gitignored)
 | [begrippen.md](docs/begrippen.md) | every statistical concept, with references |
 | [backlog/](docs/backlog/README.md) | proposals with the reason they are deferred |
 
-Documentation is written in Dutch; this README summarises the findings in English.
+Documentation is written in Dutch, except `WALKTHROUGH.md` and `RESULTS.md`,
+which are in English alongside this README.
 
 ---
 
@@ -310,16 +367,28 @@ Documentation is written in Dutch; this README summarises the findings in Englis
 
 Stated explicitly rather than left for a reader to discover.
 
-1. **Effective sample size is far below nominal.** 5,957 trading days, but only
-   **94 non-overlapping quarters** — and realised volatility, the quantity Phase
-   4 models, has an effective sample size of roughly **42** after correcting for
-   autocorrelation. The GARCH parameters rest on that.
-2. **No point-in-time data.** Analyses use the revised series. Measured impact
-   on the dollar index is 1.4%, which largely cancels in log returns, but this is
-   not a point-in-time backtest.
-3. **The Kupiec test is weak at this sample size.** Even with 495 windows you
-   expect only 5 breaches; the difference between 5 and 9 is not statistically
-   separable.
+1. **Effective sample size is far below nominal.** 5,959 trading days, but only
+   **94 non-overlapping quarters** — of which **78 are testable**, since the
+   first 1,000 days are consumed fitting the model before the first decision
+   point. Realised volatility, the quantity Phase 4 models, has an effective
+   sample size of roughly **42** after correcting for autocorrelation. The GARCH
+   parameters rest on that.
+2. **No point-in-time data in the analyses.** The ALFRED machinery exists and is
+   tested — `test_point_in_time_integrity_across_all_dates` proves that a series
+   requested as-of date T never contains a revision published after T, and it
+   fails against a deliberately broken implementation — but the pipeline still
+   uses the revised series. Measured impact on the dollar index is 1.4%, which
+   largely cancels in log returns. This is a capability that has been verified,
+   not a claim that the backtest is point-in-time.
+3. **The coverage tests are underpowered, and this governs every conclusion in
+   Phase 4.** With 495 overlapping windows you expect only 5 breaches, and 5
+   versus 9 is not separable. On the stricter non-overlapping basis the
+   benchmark uses — 78 independent quarters — you expect **0.78**, and 0, 1, 2
+   and 3 breaches are all consistent with the null. No model comparison at this
+   horizon can be decisive, which is why every row of the coverage table is
+   flagged `UNDERPOWERED` and why the benchmark result is reported as "GARCH
+   does not win" rather than "the fixed rule is better". Meaningful power would
+   need roughly 500 quarters — about 125 years.
 4. **GARCH persistence of 0.9956 is near-unit.** The long-run variance is
    therefore poorly identified, which is why GARCH overstates the quarterly tail
    by roughly 5 pp.

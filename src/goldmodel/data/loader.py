@@ -24,6 +24,7 @@ import pandas as pd
 
 from goldmodel.config import (
     ALL_SERIES,
+    ANALYSIS_END_DATE,
     DEFAULT_FETCH_SETTINGS,
     FetchSettings,
     SeriesSpec,
@@ -229,8 +230,20 @@ class DataLoader:
     # -- paneel bouwen ----------------------------------------------------
 
     @staticmethod
-    def build_panel(report: LoadReport) -> pd.DataFrame:
+    def build_panel(
+        report: LoadReport, *, end_date: str | pd.Timestamp | None = ANALYSIS_END_DATE
+    ) -> pd.DataFrame:
         """Voegt de geladen reeksen samen tot één dataframe op datum.
+
+        De einddatum
+        ------------
+        Standaard wordt het paneel afgekapt op ``ANALYSIS_END_DATE``
+        (30 september 2026). Dat is bewust: zonder vaste einddatum verandert
+        elk gerapporteerd getal zodra de markt een dag verder is, en dan is
+        een paper niet meer na te rekenen.
+
+        Geef ``end_date=None`` om alle beschikbare data te gebruiken — nuttig
+        om te meten hoeveel een resultaat meebeweegt met nieuwe data.
 
         We gebruiken een outer join op de datumindex, zodat geen enkele
         observatie verloren gaat. Het resultaat bevat dus gaten: FRED-reeksen
@@ -256,4 +269,9 @@ class DataLoader:
 
         panel = pd.concat(columns, axis=1)
         panel.index.name = "date"
-        return panel.sort_index()
+        panel = panel.sort_index()
+
+        if end_date is not None:
+            panel = panel.loc[panel.index <= pd.Timestamp(end_date)]
+
+        return panel

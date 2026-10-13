@@ -19,6 +19,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from goldmodel.config import (
     ALL_SERIES,
+    ANALYSIS_END_DATE,
     RevisionBehaviour,
     Source,
     core_series,
@@ -146,6 +147,115 @@ def test_as_known_on_hides_unpublished_observations() -> None:
     known = as_known_on(vintage, "2020-05-01")
     assert pd.Timestamp("2020-01-01") in known.index
     assert pd.Timestamp("2020-04-01") not in known.index
+
+
+def test_point_in_time_integrity_across_all_dates() -> None:
+    """DE POINT-IN-TIME TEST: een reeks opgevraagd per T bevat nooit een
+    revisie die na T gepubliceerd is.
+
+    De twee tests hierboven controleren losse gevallen. Deze controleert het
+    principe zelf, over elke combinatie van observatiedatum en peildatum in
+    een paneel met meerdere revisies.
+
+    Waarom dit de belangrijkste test van de datalaag is
+    ---------------------------------------------------
+    Zodra hier één revisie doorheen lekt, is elke walk-forward in dit project
+    besmet: het model zou dan getraind zijn op cijfers die pas maanden later
+    bestonden, en de out-of-sample resultaten zijn dan geen out-of-sample
+    resultaten meer. Dat is de klassieke manier waarop een backtest er goed
+    uitziet zonder het te zijn.
+
+    De invariant: voor elke peildatum T en elke observatie in het resultaat
+    geldt dat de teruggegeven waarde afkomstig is uit een vintage met
+    realtime_start <= T. Het bestaan van latere, "betere" waarden mag daar
+    niets aan veranderen.
+    """
+    # Drie observaties, elk met meerdere revisies op verschillende momenten.
+    vintage = pd.DataFrame(
+        {
+            "date": pd.to_datetime(
+                [
+                    "2020-01-01", "2020-01-01", "2020-01-01",
+                    "2020-02-01", "2020-02-01",
+                    "2020-03-01",
+                ]
+            ),
+            "realtime_start": pd.to_datetime(
+                [
+                    "2020-02-15", "2020-03-15", "2020-08-15",
+                    "2020-03-15", "2020-09-15",
+                    "2020-04-15",
+                ]
+            ),
+            "realtime_end": pd.to_datetime(
+                [
+                    "2020-03-14", "2020-08-14", "9999-12-31",
+                    "2020-09-14", "9999-12-31",
+                    "9999-12-31",
+                ]
+            ),
+            # De waarde codeert zijn eigen publicatiedatum, zodat we kunnen
+            # narekenen waar hij vandaan komt.
+            "value": [1.0, 2.0, 3.0, 10.0, 20.0, 100.0],
+        }
+    )
+
+    # Van elke waarde: wanneer werd hij gepubliceerd?
+    published_on = {
+        (pd.Timestamp("2020-01-01"), 1.0): pd.Timestamp("2020-02-15"),
+        (pd.Timestamp("2020-01-01"), 2.0): pd.Timestamp("2020-03-15"),
+        (pd.Timestamp("2020-01-01"), 3.0): pd.Timestamp("2020-08-15"),
+        (pd.Timestamp("2020-02-01"), 10.0): pd.Timestamp("2020-03-15"),
+        (pd.Timestamp("2020-02-01"), 20.0): pd.Timestamp("2020-09-15"),
+        (pd.Timestamp("2020-03-01"), 100.0): pd.Timestamp("2020-04-15"),
+    }
+
+    # Loop over een jaar aan peildatums, ruim rond alle publicatiemomenten.
+    for known_on in pd.date_range("2020-01-01", "2021-01-01", freq="D"):
+        snapshot = as_known_on(vintage, known_on)
+
+        for observation_date, row in snapshot.iterrows():
+            key = (observation_date, float(row["value"]))
+            assert key in published_on, (
+                f"onbekende waarde {row['value']} voor {observation_date.date()} "
+                f"op peildatum {known_on.date()}"
+            )
+            assert published_on[key] <= known_on, (
+                f"LOOK-AHEAD: op {known_on.date()} gaf de reeks de waarde "
+                f"{row['value']} voor {observation_date.date()}, maar die werd "
+                f"pas op {published_on[key].date()} gepubliceerd"
+            )
+
+
+def test_point_in_time_snapshot_is_monotone_in_knowledge() -> None:
+    """Later weet je nooit minder: het aantal observaties kan alleen groeien.
+
+    Een sluipend soort fout is een filter dat op sommige peildatums te veel
+    wegsnijdt. Dan kalft de reeks af naarmate je verder komt, en dat kan
+    niet: een publicatie wordt niet ingetrokken.
+    """
+    vintage = pd.DataFrame(
+        {
+            "date": pd.to_datetime(
+                ["2020-01-01", "2020-02-01", "2020-03-01", "2020-01-01"]
+            ),
+            "realtime_start": pd.to_datetime(
+                ["2020-02-15", "2020-03-15", "2020-04-15", "2020-06-15"]
+            ),
+            "realtime_end": pd.to_datetime(
+                ["2020-06-14", "9999-12-31", "9999-12-31", "9999-12-31"]
+            ),
+            "value": [1.0, 10.0, 100.0, 2.0],
+        }
+    )
+
+    counts = [
+        len(as_known_on(vintage, date))
+        for date in pd.date_range("2020-01-01", "2020-12-31", freq="D")
+    ]
+
+    for earlier, later in zip(counts, counts[1:]):
+        assert later >= earlier, "de reeks werd korter naarmate de tijd verstreek"
 
 
 # -- loader ---------------------------------------------------------------
@@ -326,3 +436,44 @@ def test_publication_lag_is_set_for_fred_series() -> None:
             assert spec.publication_lag_days >= 1, (
                 f"{spec.name}: FRED publiceert nooit op de observatiedag zelf"
             )
+
+
+# -- vaste einddatum ------------------------------------------------------
+
+
+def test_panel_is_truncated_at_the_analysis_end_date(
+    sample_frame: pd.DataFrame,
+) -> None:
+    """Het paneel stopt standaard op ANALYSIS_END_DATE.
+
+    Zonder vaste einddatum verandert elk gerapporteerd getal zodra de markt
+    een dag verder is. Bij de audit schoof de 99%-buffer van 33,7% naar 32,6%
+    puur door drie weken extra data.
+    """
+    index = pd.date_range("2026-09-01", "2026-10-31", freq="B", name="date")
+    frame = pd.DataFrame({"value": range(len(index))}, index=index)
+    spec = series_by_name("gold_futures")
+    report = LoadReport(results=[LoadResult(spec, LoadStatus.DOWNLOADED, frame)])
+
+    panel = DataLoader.build_panel(report)
+
+    assert panel.index.max() == pd.Timestamp(ANALYSIS_END_DATE)
+    assert not (panel.index > pd.Timestamp(ANALYSIS_END_DATE)).any()
+
+
+def test_end_date_none_keeps_all_data(sample_frame: pd.DataFrame) -> None:
+    """Met end_date=None blijft alles staan.
+
+    Die optie is nodig om te MÉTEN hoeveel een resultaat meebeweegt met
+    nieuwe data. Die gevoeligheid is zelf een resultaat, dus de mogelijkheid
+    moet blijven bestaan.
+    """
+    index = pd.date_range("2026-09-01", "2026-10-31", freq="B", name="date")
+    frame = pd.DataFrame({"value": range(len(index))}, index=index)
+    spec = series_by_name("gold_futures")
+    report = LoadReport(results=[LoadResult(spec, LoadStatus.DOWNLOADED, frame)])
+
+    panel = DataLoader.build_panel(report, end_date=None)
+
+    assert panel.index.max() == index.max()
+    assert panel.index.max() > pd.Timestamp(ANALYSIS_END_DATE)

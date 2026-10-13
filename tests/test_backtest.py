@@ -23,6 +23,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from goldmodel.backtest import (  # noqa: E402
+    _performance_metrics,
     CostModel,
     compare_to_benchmarks,
     placebo_backtest,
@@ -31,6 +32,7 @@ from goldmodel.backtest import (  # noqa: E402
 )
 from goldmodel.signal import (  # noqa: E402
     SignalSettings,
+    apply_no_trade_band,
     position_statistics,
     predictions_to_positions,
     turnover,
@@ -325,3 +327,111 @@ def test_benchmarks_include_doing_nothing() -> None:
 
     assert "niets doen" in table.index
     assert float(table.loc["niets doen", "annual_return"]) == pytest.approx(0.0)
+
+
+# -- no-trade band ---------------------------------------------------------
+
+
+def test_no_trade_band_holds_small_changes() -> None:
+    """Onder de band verandert de positie niet."""
+    index = pd.date_range("2020-01-01", periods=5, freq="B")
+    desired = pd.Series([0.0, 0.05, 0.09, 0.09, 0.05], index=index)
+
+    held = apply_no_trade_band(desired, 0.10)
+
+    # Geen enkele wijziging haalt de drempel van 0,10.
+    assert (held == 0.0).all()
+
+
+def test_no_trade_band_executes_large_changes() -> None:
+    """Boven de band wordt wel gehandeld, en naar de volledige gewenste positie."""
+    index = pd.date_range("2020-01-01", periods=4, freq="B")
+    desired = pd.Series([0.0, 0.05, 0.50, 0.52], index=index)
+
+    held = apply_no_trade_band(desired, 0.10)
+
+    assert held.iloc[1] == 0.0  # 0,05 is te klein
+    assert held.iloc[2] == 0.50  # sprong van 0,50 wordt uitgevoerd
+    assert held.iloc[3] == 0.50  # 0,02 erbij is weer te klein
+
+
+def test_no_trade_band_never_increases_turnover() -> None:
+    """De band kan de omzet alleen verlagen, nooit verhogen.
+
+    Klinkt triviaal, maar een verkeerd geïmplementeerde band die de positie
+    laat 'inhalen' kan juist extra transacties veroorzaken.
+    """
+    rng = np.random.default_rng(3)
+    index = pd.date_range("2020-01-01", periods=500, freq="B")
+    desired = pd.Series(rng.normal(0, 0.5, 500), index=index).clip(-1, 1)
+
+    baseline = turnover(desired).sum()
+    for band in (0.05, 0.1, 0.25, 0.5):
+        held = apply_no_trade_band(desired, band)
+        assert turnover(held).sum() <= baseline + 1e-9
+
+
+def test_no_trade_band_zero_is_identity() -> None:
+    """Uit betekent uit: de standaardinstelling mag niets veranderen.
+
+    Dit borgt dat het toevoegen van de optie de bestaande resultaten niet
+    stilletjes verschoven heeft.
+    """
+    rng = np.random.default_rng(11)
+    index = pd.date_range("2020-01-01", periods=200, freq="B")
+    desired = pd.Series(rng.normal(0, 0.5, 200), index=index)
+
+    settings = SignalSettings(method="linear", no_trade_band=0.0)
+    without_band = predictions_to_positions(desired, settings)
+    plain = predictions_to_positions(desired, SignalSettings(method="linear"))
+
+    pd.testing.assert_series_equal(without_band, plain)
+
+
+# -- samenstellen van log-rendementen -------------------------------------
+
+
+def test_equity_curve_compounds_log_returns_correctly() -> None:
+    """Log-rendementen worden samengesteld via exp(cumsum), niet (1+r).cumprod().
+
+    Dit was een echte fout: de reeks bestaat uit log-rendementen, maar de
+    equity-curve behandelde ze als enkelvoudige rendementen. Over 23 jaar goud
+    gaf dat 714% totaalrendement tegen de werkelijke 1.114%.
+
+    De test gebruikt een prijsreeks waarvan het antwoord vooraf vaststaat.
+    """
+    prices = pd.Series(
+        [100.0, 110.0, 99.0, 121.0],
+        index=pd.date_range("2020-01-01", periods=4, freq="B"),
+    )
+    log_returns = np.log(prices / prices.shift(1)).dropna()
+
+    metrics = _performance_metrics(log_returns)
+
+    # 100 -> 121 is exact +21%.
+    assert metrics["total_return"] == pytest.approx(0.21, abs=1e-9)
+    # De diepste val is 110 -> 99, exact -10%.
+    assert metrics["max_drawdown"] == pytest.approx(-0.10, abs=1e-9)
+
+
+def test_sharpe_is_unaffected_by_the_compounding_fix() -> None:
+    """Sharpe en volatiliteit komen uit de dagreeks, niet uit de equity-curve.
+
+    Dit legt de SCOPE van de bugfix vast: de gerapporteerde Sharpe-ratio's
+    waren altijd goed, want die gebruiken alleen gemiddelde en
+    standaardafwijking. Zou iemand de curve ooit weer in de Sharpe betrekken,
+    dan faalt deze test.
+    """
+    rng = np.random.default_rng(5)
+    returns = pd.Series(
+        rng.normal(0.0002, 0.01, 1000),
+        index=pd.date_range("2020-01-01", periods=1000, freq="B"),
+    )
+
+    metrics = _performance_metrics(returns)
+
+    expected_sharpe = (returns.mean() * 252) / (returns.std() * np.sqrt(252))
+    assert metrics["sharpe"] == pytest.approx(expected_sharpe, rel=1e-12)
+    assert metrics["annual_volatility"] == pytest.approx(
+        returns.std() * np.sqrt(252), rel=1e-12
+    )

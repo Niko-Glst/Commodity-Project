@@ -62,6 +62,11 @@ DRIVERS = [
     "vix",
 ]
 
+# Minimale positiewijziging voordat er gehandeld wordt. 0,0 is uit, en dat is
+# de gerapporteerde configuratie. Zie docs/RESULTS.md voor wat er gebeurt als
+# je hem aanzet - kort gezegd: bijna niets, en dat is zelf het resultaat.
+NO_TRADE_BAND = 0.0
+
 
 @dataclass
 class RunManifest:
@@ -163,7 +168,14 @@ def stage_signal_and_backtest(
     )
     predictions = walk_forward.predictions["ols"]
 
-    settings = SignalSettings(method="linear", max_position=1.0)
+    # NO_TRADE_BAND staat op 0,0: uit. De band is een OPTIE om het
+    # kosteneffect te laten zien, geen correctie op de strategie. Zie de
+    # voetnoot in README.md en docs/RESULTS.md: hij is één keer over een
+    # reeks waarden gedraaid en er is geen waarde gekozen die de uitkomst
+    # gunstig maakt. Zet hem hier op bijvoorbeeld 0,25 om het zelf te zien.
+    settings = SignalSettings(
+        method="linear", max_position=1.0, no_trade_band=NO_TRADE_BAND
+    )
     positions = predictions_to_positions(predictions, settings)
 
     stats = position_statistics(positions)

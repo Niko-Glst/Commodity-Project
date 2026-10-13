@@ -421,6 +421,19 @@ YFINANCE_SERIES: tuple[SeriesSpec, ...] = (
 ALL_SERIES: tuple[SeriesSpec, ...] = FRED_SERIES + YFINANCE_SERIES
 
 
+# Vaste einddatum voor alle analyses.
+#
+# Waarom dit bestaat: zonder vaste einddatum verandert elk gerapporteerd getal
+# zodra de markt een dag verder is. Bij de audit van 13 oktober 2026 schoof de
+# 99%-buffer van 33,7% naar 32,6% puur door drie weken extra data - geen
+# codewijziging. Een paper met zulke getallen is niet na te rekenen.
+#
+# De data zelf wordt WEL volledig opgehaald en gecacheerd. Het afkappen
+# gebeurt in build_panel(), zodat je met end_date=None kunt meten hoeveel een
+# resultaat meebeweegt. Die gevoeligheid is zelf een resultaat.
+ANALYSIS_END_DATE = "2026-09-30"
+
+
 def series_by_name(name: str) -> SeriesSpec:
     """Zoekt een reeksdefinitie op via de leesbare naam."""
     for spec in ALL_SERIES:
