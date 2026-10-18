@@ -1,5 +1,5 @@
 model,N,breaches,expected,kupiec_p,christoffersen_p,mean_buffer,max_buffer,underpowered
-garch_t,78,1,0.78,0.8104,0.8711,28.5,70.8,JA
+garch_t,78,1,0.78,0.8104,0.8711,28.7,70.2,JA
 vast_25pct,78,1,0.78,0.8104,0.8711,25.0,25.0,JA
 rolling_p99,78,6,0.78,0.0001,0.3136,21.6,33.0,JA
 ewma_094,78,2,0.78,0.246,0.744,25.5,78.8,JA
