@@ -32,10 +32,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-import matplotlib  # noqa: E402
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 from scipy import stats as sps  # noqa: E402
@@ -68,6 +65,8 @@ from goldmodel.validation import (  # noqa: E402
     rolling_percentile_buffer,
 )
 from goldmodel.viz.correlations import build_change_panel  # noqa: E402
+
+import make_figures  # noqa: E402
 
 RESULTS = PROJECT_ROOT / "results"
 FIGURES = RESULTS / "figures"
@@ -105,27 +104,9 @@ def record(
         numbers[name]["note"] = note
 
 
-def save_figure(fig: plt.Figure, stem: str) -> None:
-    """Schrijft een figuur als vector-PDF en PNG."""
-    FIGURES.mkdir(parents=True, exist_ok=True)
-    fig.savefig(FIGURES / f"{stem}.pdf", bbox_inches="tight")
-    fig.savefig(FIGURES / f"{stem}.png", dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    print(f"    {stem}.pdf + .png")
-
-
 def main() -> int:
     """Draait alles en bevriest de uitkomsten."""
     warnings.simplefilter("ignore")
-    plt.rcParams.update(
-        {
-            "font.size": 11,
-            "axes.labelsize": 11,
-            "axes.titlesize": 12,
-            "legend.fontsize": 10,
-            "figure.dpi": 100,
-        }
-    )
     RESULTS.mkdir(exist_ok=True)
     TABLES.mkdir(exist_ok=True)
 
@@ -713,157 +694,35 @@ def main() -> int:
     )
 
     # -- figuren ----------------------------------------------------------
+    # De opmaak staat in make_figures.py, zodat de figuren ook los vanaf de
+    # bevroren uitvoer opnieuw te maken zijn.
     print("[6/6] Figuren")
-
-    # F1: verdeling met normaal ernaast
-    fig, ax = plt.subplots(figsize=(6.5, 4))
-    ax.hist(
-        gold * 100, bins=120, density=True, alpha=0.65,
-        color="#4C72B0", label=f"goud (n={len(gold):,})",
-    )
-    grid = np.linspace(gold.min() * 100, gold.max() * 100, 400)
-    ax.plot(
-        grid,
-        sps.norm.pdf(grid, gold.mean() * 100, gold.std() * 100),
-        "r--", lw=1.8, label="normaal, zelfde gem./std",
-    )
-    ax.set_xlabel("dagelijks log-rendement (%)")
-    ax.set_ylabel("dichtheid")
-    ax.set_title(
-        f"Dikke staarten: excess kurtosis "
-        f"{numbers['kurtosis_excess']['value']}"
-    )
-    ax.legend(frameon=False)
-    ax.set_xlim(-6, 6)
-    save_figure(fig, "fig1_return_distribution")
-
-    # F2: volatiliteitsclustering
-    fig, ax = plt.subplots(figsize=(6.5, 3.4))
-    rolling = gold.rolling(63).std() * np.sqrt(252) * 100
-    ax.plot(rolling.index, rolling.to_numpy(), lw=0.9, color="#C44E52")
-    ax.axhline(
-        float(gold.std() * np.sqrt(252) * 100), ls="--", lw=1,
-        color="grey", label="gemiddelde over de hele reeks",
-    )
-    ax.set_xlabel("jaar")
-    ax.set_ylabel("volatiliteit (% per jaar)")
-    ax.set_title(
-        f"Volatiliteitsclustering: persistentie "
-        f"{numbers['garch_persistence']['value']}, "
-        f"halfwaardetijd {numbers['garch_half_life']['value']:.0f} dagen"
-    )
-    ax.legend(frameon=False)
-    save_figure(fig, "fig2_volatility_clustering")
-
-    # F3: out-of-sample voorspelkracht
-    fig, ax = plt.subplots(figsize=(6.5, 3.8))
-    order = ["random_walk", "historisch", "ols", "ridge"]
-    present = [m for m in order if m in metrics.index]
-    heights = [float(metrics.loc[m, "r2_oos"]) for m in present]
-    colours = ["grey" if h >= 0 else "#C44E52" for h in heights]
-    ax.bar(present, heights, color=colours)
-    ax.axhline(0, color="black", lw=0.8)
-    ax.set_ylabel("out-of-sample $R^2$")
-    ax.set_xlabel("model")
-    ax.set_title(
-        f"Richting is niet voorspelbaar (n={numbers['n_oos_days']['value']:,} dagen)"
-    )
-    for position, height in enumerate(heights):
-        ax.text(
-            position, height + (0.004 if height >= 0 else -0.004),
-            f"{height:+.4f}", ha="center",
-            va="bottom" if height >= 0 else "top", fontsize=9,
-        )
-    save_figure(fig, "fig3_oos_r2")
-
-    # F4: buffer tegen vuistregel
-    fig, ax = plt.subplots(figsize=(6.5, 4))
-    excursions = np.sort(garch_simulation.max_adverse) * 100
-    cumulative = np.arange(1, len(excursions) + 1) / len(excursions) * 100
-    ax.plot(excursions, cumulative, lw=1.6, color="#4C72B0")
-    for rule, colour in ((5, "#C44E52"), (10, "#DD8452")):
-        covered = numbers[f"coverage_of_{rule}pct_rule"]["value"] * 100
-        ax.axvline(rule, ls="--", lw=1.2, color=colour)
-        ax.text(
-            rule + 0.6, 30, f"{rule}%-regel\ndekt {covered:.0f}%",
-            fontsize=9, color=colour,
-        )
-    buffer_99 = numbers["buffer_99_garch_t"]["value"] * 100
-    ax.axhline(99, ls=":", lw=1, color="grey")
-    ax.axvline(buffer_99, ls="-", lw=1.4, color="green")
-    ax.text(buffer_99 + 0.6, 60, f"99%-buffer\n{buffer_99:.1f}%", fontsize=9, color="green")
-    ax.set_xlabel("maximale tegenbeweging over een kwartaal (%)")
-    ax.set_ylabel("cumulatief percentage paden (%)")
-    ax.set_title(f"Benodigde buffer tegen de vuistregel ({N_PATHS:,} paden)")
-    ax.set_xlim(0, min(80, excursions.max()))
-    save_figure(fig, "fig4_buffer_vs_rule_of_thumb")
-
-    # F5: goud als hedge
     hedge_path = RESULTS / "hedge_numbers.json"
-    if hedge_path.exists():
-        hedge = json.loads(hedge_path.read_text(encoding="utf-8"))
-        fig, ax = plt.subplots(figsize=(6.5, 3.8))
-        labels = ["volledige\nsteekproef", "2008\nGFC", "maart\n2020", "2022\nbear"]
-        keys = [
-            "corr_gold_sp500",
-            "corr_gold_sp500_stress_2008",
-            "corr_gold_sp500_stress_maart",
-            "corr_gold_sp500_stress_2022",
-        ]
-        values_list = [hedge.get(k, float("nan")) for k in keys]
-        ax.bar(
-            labels, values_list,
-            color=["#4C72B0" if v < 0 else "#C44E52" for v in values_list],
-        )
-        ax.axhline(0, color="black", lw=0.9)
-        ax.set_ylabel(r"correlatie met S&P 500")
-        ax.set_title("Goud beschermt niet wanneer aandelen vallen")
-        for position, value in enumerate(values_list):
-            ax.text(
-                position, value + (0.004 if value >= 0 else -0.004),
-                f"{value:+.3f}", ha="center",
-                va="bottom" if value >= 0 else "top", fontsize=9,
-            )
-        save_figure(fig, "fig5_gold_not_an_equity_hedge")
-
-    # F6: de buffer hangt aan de starttoestand.
-    #
-    # Twee reeksen in één figuur, en dat is bewust:
-    #   - de gecontroleerde sweep (vaste steekproef, alleen startvariantie)
-    #     is het BEWIJS van het mechanisme;
-    #   - de zes einddatums zijn hoe het ONTDEKT werd.
-    # De tweede alleen zou zwak zijn (N=6, één invloedrijk punt); de eerste
-    # alleen zou verbergen dat het een praktisch probleem is.
     drift_path = RESULTS / "drift_numbers.json"
-    fig, ax = plt.subplots(figsize=(6.5, 4.2))
-    ax.plot(
-        conditional["start_vol_pct"], conditional["buffer_99_pct"],
-        "o-", lw=1.6, color="#4C72B0", zorder=3,
-        label="gecontroleerd: vaste steekproef, alleen startvol varieert",
+    hedge = (
+        json.loads(hedge_path.read_text(encoding="utf-8"))
+        if hedge_path.exists() else None
+    )
+    drift = (
+        json.loads(drift_path.read_text(encoding="utf-8"))
+        if drift_path.exists() else None
+    )
+    make_figures.build_all(
+        gold=gold,
+        max_adverse=garch_simulation.max_adverse,
+        numbers=make_figures.plain_numbers(numbers),
+        metrics=metrics,
+        conditional=conditional,
+        hedge=hedge,
+        drift_rows=drift["rows"] if drift else None,
+        frozen_end_date=ANALYSIS_END_DATE,
     )
     correlation = float("nan")
-    if drift_path.exists():
-        drift = json.loads(drift_path.read_text(encoding="utf-8"))
+    if drift is not None:
         frame = pd.DataFrame(drift["rows"])
-        ax.scatter(
-            frame["startvol_pct"], frame["buffer_99_pct"],
-            s=85, marker="s", color="#C44E52", zorder=4,
-            label="waargenomen: zes einddatums, zelfde code",
-        )
-        for _, row in frame.iterrows():
-            ax.annotate(
-                row["einddatum"],
-                (row["startvol_pct"], row["buffer_99_pct"]),
-                textcoords="offset points", xytext=(8, -4), fontsize=7.5,
-            )
         correlation = float(
             np.corrcoef(frame["vol_ratio"], frame["buffer_99_pct"])[0, 1]
         )
-    ax.set_xlabel("geannualiseerde volatiliteit op de startdatum (%)")
-    ax.set_ylabel("99%-buffer (% van notioneel)")
-    ax.set_title("De buffer is conditioneel op de starttoestand")
-    ax.legend(frameon=False, fontsize=8.5, loc="upper left")
-    save_figure(fig, "fig6_buffer_depends_on_start_state")
 
     if drift_path.exists():
         record(
