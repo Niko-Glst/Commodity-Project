@@ -1,9 +1,9 @@
 {
   "_manifest": {
-    "frozen_at": "2026-10-18T11:40:40.368796+00:00",
+    "frozen_at": "2026-10-18T11:52:23.881794+00:00",
     "analysis_end_date": "2026-09-30",
-    "git_commit": "182303a08b4227506a8f226507ade472941b1479",
-    "git_dirty": true,
+    "git_commit": "7c52283015e65f2844258d528f8f4993d0f9b065",
+    "git_dirty": false,
     "seed": 42,
     "n_paths": 20000,
     "python": "3.12.10",
@@ -456,6 +456,20 @@
       "frequency": "kwartaal",
       "source": "validation.evaluate_coverage"
     },
+    "christoffersen_p_garch_t": {
+      "value": 0.8711,
+      "unit": "p-waarde",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.christoffersen_independence_test"
+    },
+    "max_buffer_garch_t": {
+      "value": 0.7076,
+      "unit": "fractie van notioneel",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.evaluate_coverage"
+    },
     "breaches_vast_25pct": {
       "value": 1,
       "unit": "aantal",
@@ -471,6 +485,20 @@
       "source": "validation.kupiec_pof_test"
     },
     "mean_buffer_vast_25pct": {
+      "value": 0.25,
+      "unit": "fractie van notioneel",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.evaluate_coverage"
+    },
+    "christoffersen_p_vast_25pct": {
+      "value": 0.8711,
+      "unit": "p-waarde",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.christoffersen_independence_test"
+    },
+    "max_buffer_vast_25pct": {
       "value": 0.25,
       "unit": "fractie van notioneel",
       "sample_period": "2003-01-02 tot 2026-09-30",
@@ -498,6 +526,20 @@
       "frequency": "kwartaal",
       "source": "validation.evaluate_coverage"
     },
+    "christoffersen_p_rolling_p99": {
+      "value": 0.3136,
+      "unit": "p-waarde",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.christoffersen_independence_test"
+    },
+    "max_buffer_rolling_p99": {
+      "value": 0.3302,
+      "unit": "fractie van notioneel",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.evaluate_coverage"
+    },
     "breaches_ewma_094": {
       "value": 2,
       "unit": "aantal",
@@ -514,6 +556,20 @@
     },
     "mean_buffer_ewma_094": {
       "value": 0.2546,
+      "unit": "fractie van notioneel",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.evaluate_coverage"
+    },
+    "christoffersen_p_ewma_094": {
+      "value": 0.744,
+      "unit": "p-waarde",
+      "sample_period": "2003-01-02 tot 2026-09-30",
+      "frequency": "kwartaal",
+      "source": "validation.christoffersen_independence_test"
+    },
+    "max_buffer_ewma_094": {
+      "value": 0.7881,
       "unit": "fractie van notioneel",
       "sample_period": "2003-01-02 tot 2026-09-30",
       "frequency": "kwartaal",
