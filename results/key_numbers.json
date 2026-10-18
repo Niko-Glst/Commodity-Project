@@ -1,8 +1,8 @@
 {
   "_manifest": {
-    "frozen_at": "2026-10-13T16:33:03.785403+00:00",
+    "frozen_at": "2026-10-18T11:40:40.368796+00:00",
     "analysis_end_date": "2026-09-30",
-    "git_commit": "e375c8737958f48279a09385049d6140981c1992",
+    "git_commit": "182303a08b4227506a8f226507ade472941b1479",
     "git_dirty": true,
     "seed": 42,
     "n_paths": 20000,
@@ -499,21 +499,21 @@
       "source": "validation.evaluate_coverage"
     },
     "breaches_ewma_094": {
-      "value": 5,
+      "value": 2,
       "unit": "aantal",
       "sample_period": "2003-01-02 tot 2026-09-30",
       "frequency": "kwartaal",
       "source": "validation.evaluate_coverage"
     },
     "kupiec_p_ewma_094": {
-      "value": 0.0013,
+      "value": 0.246,
       "unit": "p-waarde",
       "sample_period": "2003-01-02 tot 2026-09-30",
       "frequency": "kwartaal",
       "source": "validation.kupiec_pof_test"
     },
     "mean_buffer_ewma_094": {
-      "value": 0.2268,
+      "value": 0.2546,
       "unit": "fractie van notioneel",
       "sample_period": "2003-01-02 tot 2026-09-30",
       "frequency": "kwartaal",
