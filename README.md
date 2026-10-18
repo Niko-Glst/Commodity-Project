@@ -213,13 +213,13 @@ benchmarks — full table in [docs/RESULTS.md](docs/RESULTS.md):
 
 | Model | Breaches | Expected | Kupiec p | Christoffersen p | Mean buffer |
 |---|---|---|---|---|---|
-| GARCH-t | 1 | 0.78 | 0.810 | 0.871 | 28.5% |
+| GARCH-t | 1 | 0.78 | 0.810 | 0.871 | 28.7% |
 | **Fixed 25%** | 1 | 0.78 | 0.810 | 0.871 | **25.0%** |
 | Rolling p99 (2y) | 6 | 0.78 | 0.000 | 0.314 | 21.6% |
 | EWMA λ=0.94 | 2 | 0.78 | 0.246 | 0.744 | 25.5% |
 
 Three rules pass both tests. GARCH-t and the fixed rule tie on breaches; EWMA
-has one more. The fixed rule is the cheapest: 3.5 points below GARCH-t and 0.5
+has one more. The fixed rule is the cheapest: 3.7 points below GARCH-t and 0.5
 below EWMA. Only the rolling percentile fails. **On coverage and cost
 together, the rule of thumb wins.** Parameters were not adjusted to change
 that. (EWMA uses the 99.5% normal quantile, so that it covers the largest move

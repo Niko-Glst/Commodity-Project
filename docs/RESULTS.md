@@ -95,7 +95,7 @@ This is the test the claim lives or dies by. 78 non-overlapping quarters,
 
 | Model | N | Breaches | Expected | Kupiec p | Christoffersen p | Mean buffer | Max buffer |
 |---|---|---|---|---|---|---|---|
-| GARCH-t | 78 | 1 | 0.78 | 0.810 | 0.871 | **28.5%** | 70.8% |
+| GARCH-t | 78 | 1 | 0.78 | 0.810 | 0.871 | **28.7%** | 70.2% |
 | Fixed 25% | 78 | 1 | 0.78 | 0.810 | 0.871 | **25.0%** | 25.0% |
 | Rolling p99 (2y) | 78 | 6 | 0.78 | 0.000 | 0.314 | 21.6% | 33.0% |
 | EWMA λ=0.94 | 78 | 2 | 0.78 | 0.246 | 0.744 | 25.5% | 78.8% |
@@ -110,7 +110,7 @@ covered only the end-of-quarter move and failed by construction (5 breaches).
 
 Three rules pass both tests: GARCH-t, the fixed 25% and EWMA. Only the rolling
 percentile fails. The fixed rule is the cheapest of the three: 25.0% against
-25.5% for EWMA and 28.5% for GARCH-t. On the stated criterion (win on coverage
+25.5% for EWMA and 28.7% for GARCH-t. On the stated criterion (win on coverage
 *and* on average buffer size), the rule of thumb wins.
 
 The parameters have not been adjusted to change this. Tuning until the
@@ -123,18 +123,21 @@ One detail worth keeping, because it shows where the two rules differ:
 
 | Quarter | Realised | GARCH-t asked | Fixed asked |
 |---|---|---|---|
-| 2025-07 | **28.2%** | 28.3% ✓ | 25.0% ✗ |
-| 2011-07 | 23.4% | 23.0% ✗ | 25.0% ✓ |
+| 2025-07 | **28.2%** | 27.8% ✗ | 25.0% ✗ |
+| 2011-07 | 23.4% | 24.1% ✓ | 25.0% ✓ |
 
-In the worst quarter in the sample, GARCH adapted and survived by 0.1 points
-where the fixed rule broke. In 2011 it did the opposite. One instance each —
-which is exactly why the counts tie and why neither can be called better on
-this evidence.
+In the worst quarter in the sample every rule was breached, GARCH-t included
+(27.8% against 28.2%). In 2011 both GARCH-t and the fixed rule held. The
+single GARCH-t breach is within Monte Carlo error: over 20 seeds at 20,000
+paths its buffer for the 2025 quarter is 28.3% ± 0.6 pp and holds in 11 of
+20. In an earlier version with 2,000 paths per quarter the breach fell in 2011
+instead, so which quarter is breached is decided by simulation noise, not by
+the model.
 
-The GARCH buffer ranges from 16.6% to 70.8% (median 25.2%). It asks for less
-than the fixed rule in half the quarters and more in the other half. Whether
-that adaptivity is worth the extra 3.5 points on average cannot be settled
-with 78 quarters.
+The GARCH buffer ranges from 16.9% to 70.2% (median 25.5%). It asks for less
+than the fixed rule in 37 of 78 quarters and more in 41. Whether that
+adaptivity is worth the extra 3.7 points on average cannot be settled with 78
+quarters.
 
 ### Why none of this is conclusive — the power problem
 
@@ -159,8 +162,9 @@ margin calls, not the customary 5–10% (which covered 44% and 69% of paths
 respectively).
 
 Within that range the choice is not statistically settled. The fixed 25% is
-cheaper on average and simpler to defend. GARCH-t costs 3.5 points more and
-adapts to conditions, which helped in the single worst quarter observed.
+cheaper on average and simpler to defend. GARCH-t costs 3.7 points more and
+adapts to conditions, but the backtest does not show that this pays off: in
+the worst quarter observed every rule was breached.
 
 The asymmetry argues for the conservative side: running short on margin
 forces liquidation at precisely the worst moment, because that is when margin

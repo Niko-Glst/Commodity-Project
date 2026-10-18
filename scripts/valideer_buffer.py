@@ -40,6 +40,8 @@ from goldmodel.viz.distributions import compute_returns  # noqa: E402
 
 LINE = "=" * 78
 HORIZON_DAYS = 63
+# Evenveel paden als de hoofdsimulatie en de backtest in freeze_results.py.
+N_PATHS = 20_000
 CONFIDENCE = 0.99
 
 
@@ -354,7 +356,7 @@ def main() -> int:
     parser.add_argument("--snel", action="store_true", help="minder paden")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
-    n_paths = 2_000 if args.snel else 10_000
+    n_paths = 2_000 if args.snel else N_PATHS
 
     print(LINE)
     print("VALIDATIE VAN DE KERNCLAIM")

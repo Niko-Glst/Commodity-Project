@@ -31,7 +31,7 @@ sharply: the buffer is **conditional on starting volatility**, ranging from
 24.2% to 74.9% across starting states (R² = 0.988 on start-state variance),
 and the GARCH model does **not** outperform a fixed 25% rule on
 non-overlapping quarterly backtests (both: 1 breach, Kupiec p = 0.810; GARCH
-mean buffer 28.5% vs 25.0%). **Verdict: gold's direction is not predictable
+mean buffer 28.7% vs 25.0%). **Verdict: gold's direction is not predictable
 from public macro data, its volatility is, and a volatility model improves
 margin sizing over a 5–10% rule of thumb but not demonstrably over a simple
 fixed 25% — at a sample size where no such test has power.**
@@ -515,7 +515,7 @@ two-thirds of quarterly paths, not 99%.
 
 | Model | N | Breaches | Expected | Kupiec p | Christoffersen p | Mean buffer | Max buffer |
 |---|---|---|---|---|---|---|---|
-| GARCH-t | 78 | 1 | 0.78 | 0.8104 | 0.8711 | **28.46%** | 70.8% |
+| GARCH-t | 78 | 1 | 0.78 | 0.8104 | 0.8711 | **28.69%** | 70.2% |
 | **Fixed 25%** | 78 | 1 | 0.78 | 0.8104 | 0.8711 | **25.00%** | 25.0% |
 | Rolling p99 (2y) | 78 | 6 | 0.78 | 0.0001 | 0.3136 | 21.59% | 33.0% |
 | EWMA λ=0.94 | 78 | 2 | 0.78 | 0.2460 | 0.7440 | 25.46% | 78.8% |
@@ -524,8 +524,8 @@ Table: **`results/tables/coverage_comparison.csv`**
 
 Three rules pass both tests: GARCH-t, the fixed rule and EWMA. GARCH-t and the
 fixed rule tie on breaches (1 each); EWMA has 2. Among the passing rules the
-fixed rule is the cheapest and GARCH-t the most expensive: 3.5 percentage
-points above the fixed rule and 3.0 above EWMA. **On the stated criterion —
+fixed rule is the cheapest and GARCH-t the most expensive: 3.7 percentage
+points above the fixed rule and 3.2 above EWMA. **On the stated criterion —
 win on coverage *and* on capital efficiency — the rule of thumb wins.** No
 parameters were adjusted in response to this result.
 

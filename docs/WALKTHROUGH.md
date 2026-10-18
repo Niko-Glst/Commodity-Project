@@ -139,7 +139,7 @@ Run against three benchmarks — fixed 25%, rolling 2-year 99th percentile,
 EWMA λ=0.94 — over 78 non-overlapping quarters:
 
 **GARCH-t does not win.** It ties the fixed 25% rule on breaches (1 each,
-both tests passed) and loses on cost: 28.5% average buffer against 25.0%.
+both tests passed) and loses on cost: 28.7% average buffer against 25.0%.
 EWMA also passes both tests (2 breaches, 25.5% average buffer); only the
 rolling percentile fails.
 
