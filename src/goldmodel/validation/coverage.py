@@ -342,9 +342,12 @@ def ewma_buffer(
     De buffer schaalt met de wortel van de horizon, en gebruikt het normale
     kwantiel — precies de twee aannames die fase 1 weerlegde. Als GARCH-t niet
     van deze benchmark wint, voegen die correcties niets toe.
+
+    De buffer dekt het MAXIMUM van het pad, niet het eindpunt; zie
+    ``max_excursion_buffer``. Zo meet deze regel hetzelfde als de GARCH-buffer
+    en als de werkelijke uitkomst waartegen alle regels getoetst worden.
     """
     values = returns.dropna()
-    z_score = float(sps.norm.ppf(confidence))
     buffers = {}
 
     for start in period_starts:
@@ -357,10 +360,44 @@ def ewma_buffer(
         for observation in array[100:]:
             variance = lambda_ * variance + (1.0 - lambda_) * observation**2
 
-        horizon_sigma = float(np.sqrt(variance * horizon_days))
-        buffers[start] = float(np.expm1(z_score * horizon_sigma))
+        buffers[start] = max_excursion_buffer(
+            float(np.sqrt(variance)), horizon_days, confidence
+        )
 
     return pd.Series(buffers, name="ewma").sort_index()
+
+
+def max_excursion_buffer(
+    daily_sigma: float, horizon_days: int, confidence: float = 0.99
+) -> float:
+    """Buffer die het maximum van een normaal pad zonder drift dekt.
+
+    Waarom niet z_0,99 * sigma * wortel(h)
+    --------------------------------------
+    Dat is het kwantiel van de beweging aan het EIND van de horizon. Een
+    margin call komt onderweg, dus elke regel wordt getoetst tegen de
+    grootste beweging TIJDENS het kwartaal, en die is nooit kleiner dan het
+    eindpunt. Met z_0,99 dekt deze regel het maximum maar in ongeveer 98% van
+    de paden: een nadeel dat niets met de volatiliteitsschatting te maken heeft.
+
+    Het reflectieprincipe: voor een random walk zonder drift geldt
+    P(max >= b) = 2 * P(eind >= b). Voor 99% dekking van het maximum moet
+    P(eind >= b) dus 0,5% zijn, en het kwantiel wordt z_0,995 = 2,576.
+
+    Dat is exact voor een continu pad. Bij 63 dagslotkoersen mist de reeks de
+    pieken tussen twee slotkoersen, zodat de dekking iets hoger uitkomt:
+    ongeveer 99,2% in plaats van 99,0%.
+
+    Argumenten:
+        daily_sigma: Volatiliteit per dag, als log-rendement.
+        horizon_days: Lengte van de horizon in handelsdagen.
+        confidence: Gewenste dekking van het maximum.
+
+    Geeft terug:
+        De buffer als fractie van de notionele waarde: exp(z * sigma * wortel(h)) - 1.
+    """
+    z_score = float(sps.norm.ppf(1.0 - (1.0 - confidence) / 2.0))
+    return float(np.expm1(z_score * daily_sigma * np.sqrt(horizon_days)))
 
 
 def compare_buffer_rules(

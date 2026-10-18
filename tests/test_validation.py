@@ -21,12 +21,15 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
+from scipy import stats as sps  # noqa: E402
+
 from goldmodel.validation import (  # noqa: E402
     christoffersen_independence_test,
     evaluate_coverage,
     ewma_buffer,
     fixed_buffer,
     kupiec_pof_test,
+    max_excursion_buffer,
     rolling_percentile_buffer,
 )
 
@@ -216,6 +219,51 @@ def test_ewma_buffer_responds_to_recent_volatility() -> None:
     turbulent_buffer = ewma_buffer(turbulent, starts, horizon_days=63)
 
     assert turbulent_buffer.iloc[0] > calm_buffer.iloc[0]
+
+
+def test_max_excursion_buffer_covers_the_path_maximum() -> None:
+    """De EWMA-buffer dekt het MAXIMUM van het pad in 99% van de gevallen.
+
+    100.000 normale paden van 63 dagen, constante volatiliteit, geen drift.
+    De oude formule, z_0,99 * sigma * wortel(63), dekt het eindpunt in 99%
+    maar het maximum maar in ongeveer 98%.
+
+    De marge van 0,2 procentpunt is krap. Het reflectieprincipe is exact voor
+    een continu pad; met 63 dagslotkoersen ontbreken de pieken tussen twee
+    slotkoersen, en de verwachte dekking is 99,19% in plaats van 99,0%. Met
+    seed 42 komt het uit op 99,18%; een andere seed kan net boven 99,2% uitkomen.
+    """
+    rng = np.random.default_rng(42)
+    sigma, horizon, n_paths = 0.01, 63, 100_000
+    paths = np.cumsum(rng.normal(0.0, sigma, (n_paths, horizon)), axis=1)
+    # Zelfde definitie als de werkelijke uitkomst in freeze_results.py: het
+    # pad begint op nul, dus de tegenbeweging is nooit negatief.
+    worst = np.expm1(np.maximum(paths.max(axis=1), 0.0))
+
+    corrected = max_excursion_buffer(sigma, horizon, confidence=0.99)
+    old = float(np.expm1(sps.norm.ppf(0.99) * sigma * np.sqrt(horizon)))
+
+    assert abs(np.mean(worst <= corrected) - 0.99) <= 0.002
+    assert abs(np.mean(worst <= old) - 0.98) <= 0.005
+
+
+def test_ewma_buffer_uses_the_path_maximum_quantile() -> None:
+    """ewma_buffer gebruikt het kwantiel (1 + confidence) / 2, niet confidence.
+
+    Bij dezelfde data is log(1 + buffer) / z gelijk aan sigma * wortel(h),
+    ongeacht het dekkingsniveau. Dat klopt alleen met het juiste kwantiel.
+    """
+    index = make_index(400)
+    returns = pd.Series(np.random.default_rng(3).normal(0, 0.01, 400), index=index)
+    starts = pd.Index([index[300]])
+
+    implied = []
+    for confidence in (0.99, 0.95):
+        buffer = ewma_buffer(returns, starts, horizon_days=63, confidence=confidence)
+        z_score = sps.norm.ppf(1.0 - (1.0 - confidence) / 2.0)
+        implied.append(np.log1p(buffer.iloc[0]) / z_score)
+
+    assert np.isclose(implied[0], implied[1])
 
 
 # -- de toets van begin tot eind -------------------------------------------

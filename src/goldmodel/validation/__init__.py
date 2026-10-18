@@ -13,6 +13,7 @@ from goldmodel.validation.coverage import (
     ewma_buffer,
     fixed_buffer,
     kupiec_pof_test,
+    max_excursion_buffer,
     rolling_percentile_buffer,
     evaluate_coverage,
 )
@@ -24,6 +25,7 @@ __all__ = [
     "ewma_buffer",
     "fixed_buffer",
     "kupiec_pof_test",
+    "max_excursion_buffer",
     "rolling_percentile_buffer",
     "evaluate_coverage",
 ]
