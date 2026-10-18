@@ -671,7 +671,7 @@ Stated explicitly rather than implied:
 ### What the evidence does not support
 
 1. **That GARCH beats a simple fixed rule for margin sizing.** It ties on
-   breaches and costs 3.5pp more capital. H5 fails.
+   breaches and costs 3.7pp more capital. H5 fails.
 2. **That any of the coverage comparisons are conclusive.** At 0.78 expected
    breaches, the tests lack power. This is a limitation of 23 years of data on
    a quarterly horizon, not of the design.
@@ -691,9 +691,16 @@ points of buffer per percentage point of annualised starting volatility
 
 Within that range the choice between a fixed 25% and a GARCH-conditional
 buffer is **not statistically settled** at this sample size. The fixed rule is
-cheaper on average and simpler to defend; the GARCH rule adapts, which helped
-in the single worst quarter observed (July 2025: 28.2% realised, GARCH asked
-28.3% and held, the fixed rule breached).
+cheaper on average and simpler to defend; the GARCH rule adapts to the
+volatility state, but the backtest does not show that this pays off. In the
+worst quarter observed (21 July – 16 October 2025, realised adverse move
+28.2%) every rule was breached, GARCH-t included with a buffer of 27.8%.
+That outcome is within Monte Carlo error: over 20 seeds at 20,000 paths the
+GARCH-t buffer for that quarter is 28.3% ± 0.6 pp (standard deviation) and
+holds in 11 of 20. The backtest estimates every GARCH-t buffer from 20,000
+paths per quarter (seed 42 plus the quarter index), the same number as the
+headline simulations; at 2,000 paths the noise was about 1.3 pp, enough to
+decide which quarter was breached.
 
 The asymmetry of the loss function argues for the conservative side: running
 short on margin forces liquidation at the worst possible moment. But because
