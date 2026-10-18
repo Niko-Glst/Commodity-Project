@@ -222,16 +222,19 @@ def test_ewma_buffer_responds_to_recent_volatility() -> None:
 
 
 def test_max_excursion_buffer_covers_the_path_maximum() -> None:
-    """De EWMA-buffer dekt het MAXIMUM van het pad in 99% van de gevallen.
+    """De EWMA-buffer dekt het MAXIMUM van het pad in minstens 99%.
 
     100.000 normale paden van 63 dagen, constante volatiliteit, geen drift.
     De oude formule, z_0,99 * sigma * wortel(63), dekt het eindpunt in 99%
     maar het maximum maar in ongeveer 98%.
 
-    De marge van 0,2 procentpunt is krap. Het reflectieprincipe is exact voor
-    een continu pad; met 63 dagslotkoersen ontbreken de pieken tussen twee
-    slotkoersen, en de verwachte dekking is 99,19% in plaats van 99,0%. Met
-    seed 42 komt het uit op 99,18%; een andere seed kan net boven 99,2% uitkomen.
+    Waarom de grens 99,0% tot 99,5% is en niet 99,0% precies: het
+    reflectieprincipe is exact voor een continu pad. Met 63 dagslotkoersen
+    ontbreken de pieken tussen twee slotkoersen, zodat het waargenomen maximum
+    iets lager is en de verwachte dekking ongeveer 99,19% wordt (oude formule:
+    98,36%). De grenzen liggen zo'n zes standaardfouten van die verwachting
+    en hangen dus niet af van de seed; over 30 seeds lag de dekking tussen
+    99,11% en 99,24%, en de oude formule hoogstens op 98,41%.
     """
     rng = np.random.default_rng(42)
     sigma, horizon, n_paths = 0.01, 63, 100_000
@@ -243,8 +246,8 @@ def test_max_excursion_buffer_covers_the_path_maximum() -> None:
     corrected = max_excursion_buffer(sigma, horizon, confidence=0.99)
     old = float(np.expm1(sps.norm.ppf(0.99) * sigma * np.sqrt(horizon)))
 
-    assert abs(np.mean(worst <= corrected) - 0.99) <= 0.002
-    assert abs(np.mean(worst <= old) - 0.98) <= 0.005
+    assert 0.990 <= np.mean(worst <= corrected) <= 0.995
+    assert np.mean(worst <= old) < 0.986
 
 
 def test_ewma_buffer_uses_the_path_maximum_quantile() -> None:

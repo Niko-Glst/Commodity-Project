@@ -121,9 +121,14 @@ def new_figure(stem: str, title: str, **kwargs) -> tuple[plt.Figure, object]:
 
 
 def save(fig: plt.Figure, stem: str) -> None:
-    """Schrijft PDF en PNG op exact het opgegeven formaat (geen tight bbox)."""
+    """Schrijft PDF en PNG op exact het opgegeven formaat (geen tight bbox).
+
+    De PDF krijgt geen aanmaakdatum mee. Anders verschilt elk bestand bij
+    elke run, ook als er niets veranderd is, en ziet git elke freeze als
+    een wijziging van alle figuren.
+    """
     FIGURES.mkdir(parents=True, exist_ok=True)
-    fig.savefig(FIGURES / f"{stem}.pdf")
+    fig.savefig(FIGURES / f"{stem}.pdf", metadata={"CreationDate": None})
     fig.savefig(FIGURES / f"{stem}.png", dpi=300)
     plt.close(fig)
     print(f"    {stem}.pdf + .png")

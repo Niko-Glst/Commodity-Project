@@ -107,6 +107,21 @@ def record(
 def main() -> int:
     """Draait alles en bevriest de uitkomsten."""
     warnings.simplefilter("ignore")
+
+    # De git-toestand eerst, vóór er iets geschreven wordt. Achteraf gemeten
+    # telt de eigen uitvoer van deze run mee als wijziging, en zegt git_dirty
+    # niets meer over de code waarmee de getallen gemaakt zijn.
+    commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True,
+        cwd=PROJECT_ROOT,
+    ).stdout.strip()
+    dirty = bool(
+        subprocess.run(
+            ["git", "status", "--porcelain"], capture_output=True, text=True,
+            cwd=PROJECT_ROOT,
+        ).stdout.strip()
+    )
+
     RESULTS.mkdir(exist_ok=True)
     TABLES.mkdir(exist_ok=True)
 
@@ -681,6 +696,20 @@ def main() -> int:
             source="validation.evaluate_coverage",
             frequency="kwartaal",
         )
+        record(
+            f"christoffersen_p_{label}",
+            round(float(result.christoffersen_p), 4),
+            unit="p-waarde",
+            source="validation.christoffersen_independence_test",
+            frequency="kwartaal",
+        )
+        record(
+            f"max_buffer_{label}",
+            round(float(result.max_buffer), 4),
+            unit="fractie van notioneel",
+            source="validation.evaluate_coverage",
+            frequency="kwartaal",
+        )
 
     # effectieve steekproef
     realised_vol = gold.rolling(21).std().dropna()
@@ -760,17 +789,7 @@ def main() -> int:
             )
 
     # -- manifest ---------------------------------------------------------
-    commit = subprocess.run(
-        ["git", "rev-parse", "HEAD"], capture_output=True, text=True,
-        cwd=PROJECT_ROOT,
-    ).stdout.strip()
-    dirty = bool(
-        subprocess.run(
-            ["git", "status", "--porcelain"], capture_output=True, text=True,
-            cwd=PROJECT_ROOT,
-        ).stdout.strip()
-    )
-
+    # commit en dirty zijn aan het begin van de run vastgelegd.
     payload = {
         "_manifest": {
             "frozen_at": datetime.now(timezone.utc).isoformat(),
