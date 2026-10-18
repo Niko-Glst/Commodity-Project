@@ -741,7 +741,7 @@ def main() -> int:
     )
     make_figures.build_all(
         gold=gold,
-        max_adverse=garch_simulation.max_adverse,
+        simulation=garch_simulation,
         numbers=make_figures.plain_numbers(numbers),
         metrics=metrics,
         conditional=conditional,

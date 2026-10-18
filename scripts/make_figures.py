@@ -35,6 +35,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 import matplotlib  # noqa: E402
 
 matplotlib.use("Agg")
+import matplotlib.dates  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
@@ -49,16 +50,27 @@ TABLES = RESULTS / "tables"
 FIGURE_NAMES = (
     "fig1_return_distribution",
     "fig2_volatility_clustering",
+    "fig2_volatility_persistence",
+    "fig2_return_autocorrelation",
     "fig3_oos_r2",
     "fig4_buffer_vs_rule_of_thumb",
     "fig5_gold_not_an_equity_hedge",
     "fig6_buffer_depends_on_start_state",
+    "fig7_monte_carlo_paths",
 )
 
 FIGSIZE = (6.5, 4.0)
 # Figuur 2 heeft twee panelen onder elkaar en krijgt daarom meer hoogte.
 FIGSIZES = {name: FIGSIZE for name in FIGURE_NAMES}
 FIGSIZES["fig2_volatility_clustering"] = (6.5, 5.6)
+# Bedoeld voor ongeveer 60% van de tekstbreedte (6,5 inch) en daarom op ware
+# grootte getekend; de letters worden met PAPER_SCALE verkleind, zodat ze in
+# de paper even groot zijn als in de figuren die op 0,82 geschaald worden.
+FIGSIZES["fig2_volatility_persistence"] = (3.9, 2.5)
+# Paneel (b) van fig2_volatility_persistence als losse figuur, zelfde letters.
+FIGSIZES["fig2_return_autocorrelation"] = (3.0, 3.2)
+FIGSIZES["fig7_monte_carlo_paths"] = (6.5, 3.2)
+PAPER_SCALE = 0.82
 
 FONT_SIZE = 10  # in de paper (0,82 x tekstbreedte) ongeveer 8,2 pt
 NOTE_SIZE = 9
@@ -113,10 +125,13 @@ def signed(value: float, decimals: int = 4) -> str:
     return f"{value:+.{decimals}f}".replace("-", "−")
 
 
-def new_figure(stem: str, title: str, **kwargs) -> tuple[plt.Figure, object]:
-    """Maakt een figuur op het afgesproken formaat, met titel."""
+def new_figure(
+    stem: str, title: str | None, **kwargs
+) -> tuple[plt.Figure, object]:
+    """Maakt een figuur op het afgesproken formaat, met titel (None: zonder)."""
     fig, axes = plt.subplots(figsize=FIGSIZES[stem], layout="constrained", **kwargs)
-    fig.suptitle(title)
+    if title is not None:
+        fig.suptitle(title)
     return fig, axes
 
 
@@ -185,6 +200,29 @@ def figure_return_distribution(gold: pd.Series, numbers: dict) -> None:
     save(fig, "fig1_return_distribution")
 
 
+def autocorrelations(
+    returns: pd.Series, n_lags: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+    """Autocorrelatie van rendementen en van absolute rendementen.
+
+    Geeft terug: (lags 1..n_lags, ACF rendementen, ACF absolute rendementen,
+    95%-band onder witte ruis, 1,96/wortel(n)).
+
+    Die band geldt voor onafhankelijke, gelijk verdeelde waarnemingen. Bij
+    volatiliteitsclustering is de echte onzekerheid van de ACF van
+    rendementen groter, dus vallen er meer lags buiten de band dan de 5% die
+    je onder witte ruis verwacht.
+    """
+    from statsmodels.tsa.stattools import acf
+
+    values = returns.to_numpy()
+    lags = np.arange(1, n_lags + 1)
+    returns_acf = acf(values, nlags=n_lags, fft=True)[1:]
+    absolute_acf = acf(np.abs(values), nlags=n_lags, fft=True)[1:]
+    band = 1.96 / np.sqrt(len(values))
+    return lags, returns_acf, absolute_acf, float(band)
+
+
 def figure_volatility_clustering(gold: pd.Series, numbers: dict) -> None:
     """F2: volatiliteitsclustering, in de tijd en als autocorrelatie.
 
@@ -193,8 +231,6 @@ def figure_volatility_clustering(gold: pd.Series, numbers: dict) -> None:
     de richting van morgen hangt niet aan vandaag, de grootte wel. Dat is de
     brug tussen het voorspeldeel en het bufferdeel van de paper.
     """
-    from statsmodels.tsa.stattools import acf
-
     rolling = (gold.rolling(63).std() * np.sqrt(252) * 100).dropna()
     full_sample = numbers["annualised_volatility"] * 100
 
@@ -215,10 +251,7 @@ def figure_volatility_clustering(gold: pd.Series, numbers: dict) -> None:
     top.legend(loc="upper center", handlelength=2.2, ncols=2)
 
     n_lags = 40
-    lags = np.arange(1, n_lags + 1)
-    returns_acf = acf(gold.to_numpy(), nlags=n_lags, fft=True)[1:]
-    absolute_acf = acf(np.abs(gold.to_numpy()), nlags=n_lags, fft=True)[1:]
-    band = 1.96 / np.sqrt(len(gold))
+    lags, returns_acf, absolute_acf, band = autocorrelations(gold, n_lags)
     width = 0.4
 
     bottom.set_title("(b) Autocorrelation of daily returns and of their size")
@@ -237,6 +270,94 @@ def figure_volatility_clustering(gold: pd.Series, numbers: dict) -> None:
     bottom.set_ylabel("Autocorrelation")
     bottom.legend(loc="upper right", ncols=1)
     save(fig, "fig2_volatility_clustering")
+
+
+def small_figure_style() -> dict:
+    """Opmaak voor figuren die op ware grootte in de paper komen.
+
+    De letters zijn PAPER_SCALE keer zo groot als in STYLE, zodat ze gedrukt
+    even groot zijn als in de figuren die op 0,82 van de tekstbreedte staan.
+    """
+    scaled = {
+        key: STYLE[key] * PAPER_SCALE
+        for key in ("font.size", "axes.labelsize", "axes.titlesize",
+                    "xtick.labelsize", "ytick.labelsize", "legend.fontsize",
+                    "figure.titlesize")
+    }
+    scaled.update({"axes.linewidth": 0.6, "xtick.major.width": 0.6,
+                   "ytick.major.width": 0.6, "xtick.major.size": 2.5,
+                   "ytick.major.size": 2.5})
+    return scaled
+
+
+def draw_autocorrelation(ax, lags, returns_acf, absolute_acf, band: float) -> None:
+    """Tekent de ACF van rendementen en absolute rendementen met de 95%-band."""
+    ax.plot(lags, returns_acf, lw=0.6, color=COLOURS["reference"], label="Returns")
+    ax.plot(lags, absolute_acf, lw=0.9, color=COLOURS["gold"], label="|Returns|")
+    for side in (-1, 1):
+        ax.axhline(side * band, ls="--", lw=0.7, color=COLOURS["rule"])
+    ax.axhline(0, color=COLOURS["ink"], lw=0.5)
+    ax.plot([], [], ls="--", lw=0.7, color=COLOURS["rule"], label="95% band")
+    ax.set_xlim(0, 250)
+    ax.set_ylim(-0.05, 0.25)
+    ax.set_xticks([0, 50, 100, 150, 200, 250])
+    ax.set_xlabel("Lag (trading days)")
+    ax.set_ylabel("Autocorrelation")
+    ax.legend(loc="upper right", handlelength=1.8, borderaxespad=0.2)
+
+
+def figure_volatility_persistence(gold: pd.Series, numbers: dict) -> None:
+    """F2b: hoe lang volatiliteit blijft hangen, voor ongeveer 60% tekstbreedte.
+
+    (a) De rollende volatiliteit van 63 dagen tegen twee niveaus: het
+        langetermijnniveau waar GARCH(1,1)-t naar terugkeert, en het
+        gemiddelde over de hele steekproef.
+    (b) De ACF tot 250 lags (ongeveer een jaar). Absolute rendementen blijven
+        maanden boven de band; rendementen zelf niet.
+    """
+    rolling = (gold.rolling(63).std() * np.sqrt(252) * 100).dropna()
+    long_run = numbers["garch_long_run_volatility"] * 100
+    full_sample = numbers["annualised_volatility"] * 100
+    lags, returns_acf, absolute_acf, band = autocorrelations(gold, 250)
+
+    with plt.rc_context(small_figure_style()):
+        fig, (left, right) = new_figure(
+            "fig2_volatility_persistence",
+            "Volatility persists for months; returns do not",
+            ncols=2,
+        )
+
+        left.set_title("(a) 63-day rolling volatility")
+        left.plot(rolling.index, rolling.to_numpy(), lw=0.6, color=COLOURS["gold"])
+        left.axhline(long_run, ls="--", lw=0.9, color=COLOURS["garch"],
+                     label=f"GARCH long-run {long_run:.2f}%")
+        left.axhline(full_sample, ls=":", lw=1.0, color=COLOURS["reference"],
+                     label=f"Sample {full_sample:.2f}%")
+        left.set_xlim(rolling.index[0], rolling.index[-1])
+        left.set_ylim(0, 60)
+        left.xaxis.set_major_locator(matplotlib.dates.YearLocator(8))
+        left.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%Y"))
+        left.set_xlabel("Year")
+        left.set_ylabel("Volatility (% p.a.)")
+        left.legend(loc="upper left", handlelength=1.8, borderaxespad=0.2)
+
+        right.set_title("(b) Autocorrelation")
+        draw_autocorrelation(right, lags, returns_acf, absolute_acf, band)
+        save(fig, "fig2_volatility_persistence")
+
+
+def figure_return_autocorrelation(gold: pd.Series) -> None:
+    """F2c: paneel (b) van fig2_volatility_persistence als losse figuur.
+
+    Zonder paneellabel, met een eenvoudige titel.
+    """
+    lags, returns_acf, absolute_acf, band = autocorrelations(gold, 250)
+    with plt.rc_context(small_figure_style()):
+        fig, ax = new_figure(
+            "fig2_return_autocorrelation", "Autocorrelation of daily gold returns"
+        )
+        draw_autocorrelation(ax, lags, returns_acf, absolute_acf, band)
+        save(fig, "fig2_return_autocorrelation")
 
 
 def figure_oos_r2(metrics: pd.DataFrame) -> None:
@@ -389,10 +510,97 @@ def figure_start_state(conditional: pd.DataFrame, drift_rows: list[dict] | None,
     save(fig, "fig6_buffer_depends_on_start_state")
 
 
+def highlight_path(losses: np.ndarray, low: float = 10.0, high: float = 30.0) -> int:
+    """Kiest het pad waarvan het maximum het duidelijkst boven het eind ligt.
+
+    Uit de paden met een maximum tussen ``low`` en ``high`` procent (voorbij
+    de vuistregels, maar binnen de band) het pad met het grootste verschil
+    tussen maximum en eindwaarde. Een vaste regel, zodat de keuze niet op
+    het oog gemaakt wordt.
+
+    Argumenten:
+        losses: Cumulatief verlies in procent, vorm (paden, dagen + 1).
+
+    Geeft terug:
+        De rij-index van het gekozen pad.
+    """
+    peaks, ends = losses.max(axis=1), losses[:, -1]
+    eligible = np.flatnonzero((peaks >= low) & (peaks <= high))
+    if eligible.size == 0:
+        raise ValueError("geen pad met een maximum in het gevraagde bereik")
+    return int(eligible[np.argmax(peaks[eligible] - ends[eligible])])
+
+
+def figure_monte_carlo_paths(simulation, numbers: dict) -> int:
+    """F7: gesimuleerde kwartalen van het verlies op een short positie.
+
+    Exact de hoofdsimulatie (GARCH-t, start 2026-09-30, 20.000 paden, 63
+    dagen, seed 42). De grijze lijnen en het uitgelichte pad komen uit de
+    200 paden die de simulatie bewaart (de eerste 200 van de 20.000, die net
+    zo willekeurig zijn als elke andere 200); de band en de mediaan zijn
+    berekend over alle 20.000 paden.
+
+    Een pad kan ver boven een vuistregel uitkomen en toch met winst eindigen.
+    De margin calls onderweg moet je dan wel betaald hebben: daarom gaat de
+    buffer over het maximum, niet over het eindpunt.
+    """
+    losses = np.expm1(simulation.path_sample) * 100
+    days = np.arange(losses.shape[1])
+    bands = {key: np.expm1(value) * 100 for key, value in simulation.percentile_bands.items()}
+    buffer_99 = numbers["buffer_99_garch_t"] * 100
+    n_paths = simulation.settings.n_paths
+
+    shown = np.random.default_rng(42).choice(losses.shape[0], 100, replace=False)
+    chosen = highlight_path(losses)
+
+    fig, ax = new_figure(
+        "fig7_monte_carlo_paths",
+        "Simulated quarters: cumulative loss on a short gold futures position",
+    )
+    for index in shown:
+        ax.plot(days, losses[index], lw=0.4, color=COLOURS["reference"], alpha=0.35)
+    ax.fill_between(days, bands["p1"], bands["p99"], color=COLOURS["garch"],
+                    alpha=0.15, linewidth=0,
+                    label=f"1st–99th percentile, {n_paths:,} paths")
+    ax.plot(days, bands["p50"], lw=0.8, color=COLOURS["garch"], label="Median")
+    ax.plot(days, losses[chosen], lw=1.4, color=COLOURS["gold"],
+            label=f"Path {chosen}")
+    ax.plot(days, np.maximum.accumulate(losses[chosen]), lw=1.1, ls="--",
+            color=COLOURS["gold"], label="Running maximum")
+    ax.plot([], [], lw=0.6, color=COLOURS["reference"],
+            label="100 random paths")
+
+    rules = ((5, "--", COLOURS["rule"]), (10, "-.", COLOURS["rule"]),
+             (buffer_99, "-", COLOURS["garch"]))
+    for level, style, colour in rules:
+        ax.axhline(level, ls=style, lw=1.0, color=colour)
+
+    ax.set_xlim(0, days[-1])
+    ax.set_ylim(-35, 50)
+    ax.set_xlabel("Trading day")
+    ax.set_ylabel("Cumulative loss (% of notional)")
+
+    # De lijnen worden rechts naast de as benoemd, zodat geen label over de
+    # paden of de band valt.
+    labels = ax.twinx()
+    labels.set_ylim(ax.get_ylim())
+    labels.set_yticks([level for level, _, _ in rules],
+                      ["5% rule", "10% rule", f"99% GARCH-t buffer ({buffer_99:.2f}%)"])
+    labels.tick_params(axis="y", length=0)
+    labels.grid(False)
+    labels.spines["right"].set_visible(False)
+
+    # Buiten het datagebied: binnen de as is geen hoek vrij van paden of band.
+    fig.legend(loc="outside lower center", ncols=3, handlelength=2.0,
+               columnspacing=1.5)
+    save(fig, "fig7_monte_carlo_paths")
+    return chosen
+
+
 def build_all(
     *,
     gold: pd.Series,
-    max_adverse: np.ndarray,
+    simulation,
     numbers: dict,
     metrics: pd.DataFrame,
     conditional: pd.DataFrame,
@@ -400,20 +608,24 @@ def build_all(
     drift_rows: list[dict] | None,
     frozen_end_date: str,
 ) -> None:
-    """Maakt alle zes figuren.
+    """Maakt alle paperfiguren.
 
     Argumenten:
+        simulation: De GARCH-t-hoofdsimulatie (PathStatistics), voor fig4 en fig7.
         numbers: Naam -> waarde (dus zonder de metadatavelden van
             key_numbers.json); zie ``plain_numbers``.
     """
     with plt.rc_context(STYLE):
         figure_return_distribution(gold, numbers)
         figure_volatility_clustering(gold, numbers)
+        figure_volatility_persistence(gold, numbers)
+        figure_return_autocorrelation(gold)
         figure_oos_r2(metrics)
-        figure_buffer_vs_rule(max_adverse, numbers)
+        figure_buffer_vs_rule(simulation.max_adverse, numbers)
         if hedge is not None:
             figure_equity_hedge(hedge)
         figure_start_state(conditional, drift_rows, frozen_end_date)
+        figure_monte_carlo_paths(simulation, numbers)
 
 
 def plain_numbers(records: dict) -> dict:
@@ -488,7 +700,7 @@ def main() -> int:
     print("Figuren")
     build_all(
         gold=gold,
-        max_adverse=simulation.max_adverse,
+        simulation=simulation,
         numbers=numbers,
         metrics=metrics,
         conditional=conditional,
