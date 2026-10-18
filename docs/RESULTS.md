@@ -98,15 +98,20 @@ This is the test the claim lives or dies by. 78 non-overlapping quarters,
 | GARCH-t | 78 | 1 | 0.78 | 0.810 | 0.871 | **28.5%** | 70.8% |
 | Fixed 25% | 78 | 1 | 0.78 | 0.810 | 0.871 | **25.0%** | 25.0% |
 | Rolling p99 (2y) | 78 | 6 | 0.78 | 0.000 | 0.314 | 21.6% | 33.0% |
-| EWMA λ=0.94 | 78 | 5 | 0.78 | 0.001 | 0.405 | 22.7% | 69.0% |
+| EWMA λ=0.94 | 78 | 2 | 0.78 | 0.246 | 0.744 | 25.5% | 78.8% |
+
+The EWMA buffer uses the 99.5% normal quantile so that it covers the largest
+move *during* the quarter, like the other rules. With the 99% quantile it
+covered only the end-of-quarter move and failed by construction (5 breaches).
 
 ### The honest conclusion
 
 **GARCH-t does not win.**
 
-Two rules pass both tests: GARCH-t and the fixed 25%. Of those, the fixed
-rule is cheaper — 25.0% against 28.5%. On the stated criterion (win on
-coverage *and* on average buffer size), the rule of thumb wins.
+Three rules pass both tests: GARCH-t, the fixed 25% and EWMA. Only the rolling
+percentile fails. The fixed rule is the cheapest of the three: 25.0% against
+25.5% for EWMA and 28.5% for GARCH-t. On the stated criterion (win on coverage
+*and* on average buffer size), the rule of thumb wins.
 
 The parameters have not been adjusted to change this. Tuning until the
 preferred model wins would measure my own degrees of freedom rather than the

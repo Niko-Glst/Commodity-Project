@@ -140,6 +140,8 @@ EWMA λ=0.94 — over 78 non-overlapping quarters:
 
 **GARCH-t does not win.** It ties the fixed 25% rule on breaches (1 each,
 both tests passed) and loses on cost: 28.5% average buffer against 25.0%.
+EWMA also passes both tests (2 breaches, 25.5% average buffer); only the
+rolling percentile fails.
 
 That is written up as the conclusion in [RESULTS.md](RESULTS.md) rather than
 tuned away. Adjusting parameters until the preferred model wins would measure

@@ -288,7 +288,11 @@ meaningless):
 1. **Fixed 25%** of notional, regardless of conditions
 2. **Rolling 2-year 99th percentile** of realised quarterly excursions
 3. **EWMA (RiskMetrics, λ = 0.94)** with normal quantiles — deliberately
-   embodying the two assumptions §5.1 rejected
+   embodying the two assumptions §5.1 rejected. The buffer is
+   $\exp(z_{0.995}\,\hat\sigma_t\sqrt{63}) - 1$: by the reflection principle
+   the 99.5% quantile of the end-of-quarter move covers the *maximum* move
+   during the quarter in 99% of driftless paths, which is what every rule is
+   tested against
 
 Each buffer is re-estimated at every decision point using only prior data.
 
@@ -514,18 +518,24 @@ two-thirds of quarterly paths, not 99%.
 | GARCH-t | 78 | 1 | 0.78 | 0.8104 | 0.8711 | **28.46%** | 70.8% |
 | **Fixed 25%** | 78 | 1 | 0.78 | 0.8104 | 0.8711 | **25.00%** | 25.0% |
 | Rolling p99 (2y) | 78 | 6 | 0.78 | 0.0001 | 0.3136 | 21.59% | 33.0% |
-| EWMA λ=0.94 | 78 | 5 | 0.78 | 0.0013 | 0.4045 | 22.68% | 69.0% |
+| EWMA λ=0.94 | 78 | 2 | 0.78 | 0.2460 | 0.7440 | 25.46% | 78.8% |
 
 Table: **`results/tables/coverage_comparison.csv`**
 
-GARCH-t and the fixed rule tie on breaches and both pass both tests. The fixed
-rule is 3.5 percentage points cheaper. **On the stated criterion — win on
-coverage *and* on capital efficiency — the rule of thumb wins.** No parameters
-were adjusted in response to this result.
+Three rules pass both tests: GARCH-t, the fixed rule and EWMA. GARCH-t and the
+fixed rule tie on breaches (1 each); EWMA has 2. Among the passing rules the
+fixed rule is the cheapest and GARCH-t the most expensive: 3.5 percentage
+points above the fixed rule and 3.0 above EWMA. **On the stated criterion —
+win on coverage *and* on capital efficiency — the rule of thumb wins.** No
+parameters were adjusted in response to this result.
 
-The two rules that fail Kupiec (rolling percentile, EWMA) both systematically
-under-reserve, which at least confirms the test discriminates against
-genuinely miscalibrated rules.
+Only the rolling percentile fails Kupiec. It systematically under-reserves
+(mean buffer 21.59%), which at least confirms the test discriminates against a
+genuinely miscalibrated rule. An earlier version of the EWMA rule used the 99%
+quantile of the end-of-quarter move instead of the maximum during the quarter
+and failed by construction (5 breaches, Kupiec p = 0.0013); that was a
+measurement error in the benchmark, not a property of EWMA, and is corrected
+(§5.5).
 
 **The power problem, which governs every conclusion in this section.** At 78
 quarters and a 99% threshold, the expected number of breaches is **0.78**. With

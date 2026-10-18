@@ -216,11 +216,15 @@ benchmarks — full table in [docs/RESULTS.md](docs/RESULTS.md):
 | GARCH-t | 1 | 0.78 | 0.810 | 0.871 | 28.5% |
 | **Fixed 25%** | 1 | 0.78 | 0.810 | 0.871 | **25.0%** |
 | Rolling p99 (2y) | 6 | 0.78 | 0.000 | 0.314 | 21.6% |
-| EWMA λ=0.94 | 5 | 0.78 | 0.001 | 0.405 | 22.7% |
+| EWMA λ=0.94 | 2 | 0.78 | 0.246 | 0.744 | 25.5% |
 
-GARCH-t and the fixed rule tie on breaches; the fixed rule is 3.5 points
-cheaper. **On coverage and cost together, the rule of thumb wins.** Parameters
-were not adjusted to change that.
+Three rules pass both tests. GARCH-t and the fixed rule tie on breaches; EWMA
+has one more. The fixed rule is the cheapest: 3.5 points below GARCH-t and 0.5
+below EWMA. Only the rolling percentile fails. **On coverage and cost
+together, the rule of thumb wins.** Parameters were not adjusted to change
+that. (EWMA uses the 99.5% normal quantile, so that it covers the largest move
+*during* the quarter, as the other rules do; with the 99% quantile it covered
+only the end-of-quarter move and failed by construction.)
 
 The honest caveat cuts both ways: at 78 quarters you expect 0.78 breaches, so
 the test cannot really separate these models at all. Every row is flagged
