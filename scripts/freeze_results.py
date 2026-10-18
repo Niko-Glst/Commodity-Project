@@ -622,6 +622,9 @@ def main() -> int:
         realised[start] = float(np.expm1(path.max()))
     realised_series = pd.Series(realised).sort_index()
 
+    # Evenveel paden als de hoofdsimulatie. Met 2.000 paden had de buffer per
+    # kwartaal een simulatieruis van ruim 1 procentpunt, genoeg om te bepalen
+    # WELK kwartaal overschreden werd.
     garch_buffers = {}
     for index, start in enumerate(starts):
         history = values.loc[values.index < start]
@@ -633,7 +636,7 @@ def main() -> int:
                 float(history.mean()),
                 parameters,
                 SimulationSettings(
-                    n_paths=2000,
+                    n_paths=N_PATHS,
                     horizon_days=HORIZON_DAYS,
                     seed=SEED + index,
                     is_short=True,
