@@ -35,7 +35,7 @@ def cmd_forecast(args) -> None:
     fc, _ = make_forecast(gold, source="live")
     store.upsert_live(fc.to_record())
     records = store.read_records()
-    scores = score(records, data.gold(prices))
+    scores = score(records, gold)
     origin = f"{fc.origin:%Y-%m-%d}"
     out = REPORTS / origin
     out.mkdir(parents=True, exist_ok=True)

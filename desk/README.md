@@ -43,12 +43,15 @@ Run on the weekend, after Friday's close (the routine runs Sunday 17:00 UTC).
 
 ```bash
 cd desk
-pip install -r requirements.txt
+python -m pip install -r requirements.txt   # same interpreter for installing and running
 python -m gold_desk forecast      # refit on the latest close, log it, score history, write summary.json
 # write reports/<origin>/news.json (format below)
 python -m gold_desk report        # render reports/<origin>/gold_desk_<origin>.pdf
 python -m pytest -q
 ```
+
+Prices come from Yahoo Finance, so the machine needs network access to
+`query1.finance.yahoo.com`, `query2.finance.yahoo.com` and `fc.yahoo.com`.
 
 `forecast` drops the current day while the New York session is still open, so
 only finished closes enter the model. If you run it mid-week, the origin is the
@@ -92,6 +95,32 @@ Kupiec test checks whether the miss rate differs from 10%.
 
 Weekly origins make the 1- and 5-day scores independent. The 10- and 21-day
 windows overlap week to week, so their p-values are too optimistic.
+
+## Drift
+
+The model runs without drift. On 2 Nov 2026 six drift rules were tested on the
+1,086 backfilled forecasts, each using only data up to its own date. Scores are
+average quantile loss (about the CRPS); p-values come from a Diebold-Mariano
+test with Newey-West errors.
+
+| Drift | Per year | 1-month score | p | 1-week score | p |
+|---|---|---|---|---|---|
+| Half the expanding mean | +6% | -1.1% | 0.064 | -0.5% | 0.002 |
+| Expanding mean | +12% | -1.1% | 0.36 | -0.7% | 0.027 |
+| Mean of last 5 years | +9% | -1.1% | 0.35 | -0.6% | 0.058 |
+| GARCH constant mean (MLE) | +19% | +0.6% | 0.75 | -0.6% | 0.27 |
+| Momentum, last year | +11% | +0.2% | 0.90 | -0.4% | 0.49 |
+| Momentum, last 3 months | +10% | +13.0% | 0.000 | +2.6% | 0.004 |
+
+The switch rule was fixed before the test: drift goes in only if it improves the
+1-month score with p < 0.05, improves it in both halves (2006-15 and 2016-26),
+and does not worsen the 1-week score. Nothing passed. Short-term momentum is
+significantly worse, which matches the paper: direction is not predictable.
+
+The best candidate, half the expanding mean, is kept as a shadow test
+(`backtest.drift_check`). Every weekly note re-scores it on the growing record
+and says when it qualifies. Without drift the 1-month misses are lopsided (2.5%
+below the range, 7.8% above); the shadow drift would make that 2.9% and 6.6%.
 
 Backfilled forecasts use only data up to their own date, but today's data
 vintage. Live forecasts record what was known on the day; they are the clean

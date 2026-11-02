@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from gold_desk.backtest import kupiec, score
+from gold_desk.backtest import diebold_mariano, drift_check, kupiec, quantile_loss, score
 from gold_desk.data import drop_unfinished_day
 from gold_desk.model import FAN_Q, GRID_Q, HORIZONS, Fit, Forecast, fit, make_forecast, simulate
 
@@ -52,6 +52,32 @@ def test_kupiec_accepts_the_nominal_rate_and_rejects_far_off():
     assert kupiec(1000, 100, 0.10) > 0.9
     assert kupiec(1000, 200, 0.10) < 0.001
     assert 0 <= kupiec(50, 0, 0.10) <= 1
+
+
+def test_quantile_loss_is_lowest_for_the_true_distribution():
+    rng = np.random.default_rng(1)
+    true = np.percentile(rng.normal(0, 1, 200_000), GRID_Q)
+    draws = rng.normal(0, 1, 4000)
+    right = np.mean([quantile_loss(r, true) for r in draws])
+    shifted = np.mean([quantile_loss(r, true + 0.5) for r in draws])
+    assert right < shifted
+
+
+def test_diebold_mariano_detects_a_consistent_gap():
+    rng = np.random.default_rng(2)
+    assert diebold_mariano(rng.normal(-0.5, 1, 500), lags=1)[1] < 0.001
+    assert diebold_mariano(rng.normal(0.0, 1, 500), lags=1)[1] > 0.01
+
+
+def test_drift_check_prefers_drift_on_a_trending_series():
+    n = 1300
+    idx = pd.bdate_range("2010-01-01", periods=n)
+    gold = pd.Series(1000 * np.exp(0.002 * np.arange(n)), index=idx)   # steady +0.2% a day
+    grid = np.linspace(0.9, 1.1, len(GRID_Q))                          # zero-drift forecast
+    recs = [{"origin": f"{d:%Y-%m-%d}", "spot": float(gold[d]), "source": "backfill",
+             "grid": {str(h): list(gold[d] * grid) for h in HORIZONS}} for d in idx[100:1250:5]]
+    check = drift_check(recs, gold).set_index("h")
+    assert check.loc[21, "change"] < 0 and check.loc[5, "change"] < 0
 
 
 def test_unfinished_day_is_dropped_only_before_the_close():

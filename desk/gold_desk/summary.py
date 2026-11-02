@@ -9,7 +9,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from .backtest import coverage, origin_position
+from .backtest import SHADOW_SHRINK, coverage, drift_check, drift_qualifies, origin_position
 from .data import GOLD, TICKERS
 from .model import FAN_Q, GRID_Q, HORIZONS, Forecast
 
@@ -115,4 +115,11 @@ def build(prices: pd.DataFrame, fc: Forecast, records: list[dict], scores: pd.Da
         {k: (f"{v:%Y-%m-%d}" if isinstance(v, pd.Timestamp) else v) for k, v in row.items()}
         for row in cov.to_dict("records")
     ]
+
+    check = drift_check(records, gold)
+    out["drift_check"] = {
+        "candidate": f"{SHADOW_SHRINK:g} x expanding mean of daily log returns",
+        "qualifies": drift_qualifies(check),
+        "rows": check.to_dict("records"),
+    }
     return out

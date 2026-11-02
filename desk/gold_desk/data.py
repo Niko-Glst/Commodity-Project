@@ -31,6 +31,11 @@ def fetch(start: str = START) -> pd.DataFrame:
     df = yf.download(list(TICKERS), start=start, progress=False, auto_adjust=False)["Close"]
     df.index = pd.to_datetime(df.index).tz_localize(None)
     df = df[df[GOLD].notna()].sort_index()
+    if df.empty or (pd.Timestamp.now() - df.index[-1]).days > 7:
+        raise RuntimeError(
+            "No recent gold prices from Yahoo Finance. Check network access to "
+            "query1.finance.yahoo.com, query2.finance.yahoo.com and fc.yahoo.com."
+        )
     return drop_unfinished_day(df)
 
 

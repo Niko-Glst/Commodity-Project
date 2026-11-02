@@ -149,7 +149,7 @@ def chart_forward(gold, fc: Forecast, levels, out: Path) -> Path:
 def chart_track(scores: pd.DataFrame, out: Path, weeks: int = 104) -> Path:
     s = scores[scores["h"] == 5].sort_values("origin").tail(weeks)
     lo, hi = s["q5"] / s["spot"] - 1, s["q95"] / s["spot"] - 1
-    fig, ax = plt.subplots(figsize=(7.2, 1.7))
+    fig, ax = plt.subplots(figsize=(7.2, 1.5))
     ax.vlines(s["origin"], lo, hi, color=B200, lw=2.6, label="Forecast 90% range, 1 week")
     hit = s["inside90"]
     ax.scatter(s.loc[hit, "origin"], s.loc[hit, "ret"], s=9, color=INK2, zorder=3, label="Realised, inside")
@@ -167,7 +167,7 @@ def chart_vol(records: list[dict], gold: pd.Series, out: Path, years: int = 3) -
     model = pd.Series({pd.Timestamp(r["origin"]): Forecast.from_record(r).fit.vol_next for r in records})
     model = model.loc[start:]
     realised = (np.log(gold).diff().rolling(21).std() * np.sqrt(252)).loc[start:]
-    fig, ax = plt.subplots(figsize=(7.2, 1.45))
+    fig, ax = plt.subplots(figsize=(7.2, 1.25))
     ax.plot(realised.index, realised.values, color=INK2, lw=1.1, label="Realised, past 21 days")
     ax.plot(model.index, model.values, color=B550, lw=1.6, label="Model forecast, next day")
     ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0, decimals=0))
@@ -384,7 +384,7 @@ def build_pdf(origin: str, report_dir: Path, prices: pd.DataFrame, records: list
                            "90% of closes inside its 90% range, 5% below and 5% above.", S["body"]),
                  Spacer(1, 2), img(chart_track(scores, tmp / "track.png")), Spacer(1, 3)]
         rows = [["Window", "Horizon", "Forecasts", "Inside 90%", "Below 5%", "Above 95%", "Kupiec p"]]
-        for _, r in cov[cov["h"].isin([1, 5, 21])].iterrows():
+        for _, r in cov[cov["h"].isin([5, 21])].iterrows():
             if not r["n"]:
                 continue
             rows.append([r["window"], f"{r['h']} day{'s' if r['h'] > 1 else ''}", f"{r['n']:,}", f"{r['inside90']:.0%}",
@@ -393,6 +393,27 @@ def build_pdf(origin: str, report_dir: Path, prices: pd.DataFrame, records: list
                   Paragraph("Kupiec p below 0.05 means the hit rate differs significantly from 90%. "
                             "21-day windows overlap week to week, so their p-values are too optimistic.", S["cap"])]
         story.append(KeepTogether(block))
+
+    dc = summary.get("drift_check")
+    if dc:
+        verdict = (tag("Drift qualifies: switch it on", GREEN) if dc["qualifies"]
+                   else tag("Keep zero drift", INK))
+        rows = [["Horizon", "Forecasts", "Score with drift", "p-value", "2006-15", "2016-26",
+                 "Misses below / above: zero", "with drift"]]
+        for r in dc["rows"]:
+            rows.append([f"{r['h']} days", f"{r['n']:,}", f"{r['change']:+.1%}", f"{r['p']:.3f}",
+                         f"{r['change_early']:+.1%}", f"{r['change_late']:+.1%}",
+                         f"{r['below_zero']:.0%} / {r['above_zero']:.0%}",
+                         f"{r['below_drift']:.0%} / {r['above_drift']:.0%}"])
+        story.append(KeepTogether([
+            Paragraph("Drift check (shadow test)", S["h2"]),
+            Paragraph(f"The model runs without drift. Each week it re-tests a drift of half gold's long-run average "
+                      f"return, using only data up to each forecast date. Verdict: {verdict}.", S["body"]),
+            Spacer(1, 2),
+            table(rows, [0.10, 0.10, 0.13, 0.09, 0.10, 0.10, 0.22, 0.16]),
+            Paragraph("Score: average quantile loss vs zero drift; negative is better. The drift goes in only if it "
+                      "improves the 1-month score with p &lt; 0.05, in both halves of the sample, without "
+                      "worsening the 1-week score.", S["cap"])]))
 
     # ---- Model update
     block = [Paragraph("Model update", S["h2"]), img(chart_vol(records, gold, tmp / "vol.png")), Spacer(1, 3)]
