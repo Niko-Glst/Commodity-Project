@@ -237,7 +237,8 @@ Elk van deze is nu gedekt door een regressietest.
 ```bash
 python -m venv .venv
 .venv\Scripts\Activate.ps1           # Windows
-pip install -r requirements.txt
+pip install -r requirements-lock.txt # exacte versies van de bevroren resultaten
+                                     # (requirements.txt geeft alleen ondergrenzen)
 
 cp .env.example .env                  # vul een gratis FRED API-sleutel in
 python scripts/check_setup.py         # controleert pakketten, sleutel, verbindingen, cache
@@ -258,8 +259,13 @@ python scripts/fase4_simulatie.py         # fase 4: Monte Carlo, VaR, ES
 python scripts/fase4_figuren.py           # fase 4: figuren en Kupiec-validatie
 python scripts/verken_vintage.py          # vintages, steekproefgrootte, placebo
 python scripts/pipeline.py                # volledige run met seed en manifest
-python -m pytest tests/ -q                # 139 tests
+python scripts/freeze_results.py          # bevroren getallen, tabellen en figuren in results/
+python -m pytest tests/ -q                # 230 tests
 ```
+
+`freeze_results.py` schrijft elk getal uit het paper naar
+`results/key_numbers.json`, met een run-manifest: commit, einddatum van de
+analyse, seed, aantal paden en pakketversies.
 
 ---
 

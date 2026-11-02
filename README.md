@@ -287,7 +287,8 @@ Each is now covered by a regression test.
 ```bash
 python -m venv .venv
 .venv\Scripts\Activate.ps1           # Windows
-pip install -r requirements.txt
+pip install -r requirements-lock.txt # exact versions used for the frozen results
+                                     # (requirements.txt gives minimum versions only)
 
 cp .env.example .env                  # add a free FRED API key
 python scripts/check_setup.py         # verifies packages, key, connections, cache
@@ -308,8 +309,13 @@ python scripts/fase4_simulatie.py         # Phase 4: Monte Carlo, VaR, ES
 python scripts/fase4_figuren.py           # Phase 4: figures and Kupiec validation
 python scripts/verken_vintage.py          # vintages, sample size, placebo runs
 python scripts/pipeline.py                # full run with seed and run manifest
-python -m pytest tests/ -q                # 139 tests
+python scripts/freeze_results.py          # frozen numbers, tables and figures in results/
+python -m pytest tests/ -q                # 230 tests
 ```
+
+`freeze_results.py` writes every number reported in the paper to
+`results/key_numbers.json`, together with a run manifest: commit, end date of
+the analysis, seed, number of paths and package versions.
 
 ---
 
