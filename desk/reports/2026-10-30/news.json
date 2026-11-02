@@ -1,0 +1,44 @@
+{
+  "title": "Desk note: weekly update",
+  "bottom_line": "Gold fell 2.7% on the week to <b>3,899</b>, a new 2026 low and the lowest close since October 2025. The Fed held rates on 28 Oct, but two officials voted for a hike, and September PCE inflation came in hot; with oil above $100, markets now price a December hike. Friday's -3.3% was 2.7x a typical day and the worst since 28 Sep. Even so, the close sits at the <b>15th percentile</b> of last week's forecast, inside the 90% range. Next: whether $3,800 holds and whether hike pricing survives the jobs data.",
+  "day_notes": {
+    "2026-10-26": "Small rebound after the previous week's drop",
+    "2026-10-27": "Bounce ahead of the Fed",
+    "2026-10-28": "Fed holds at 3.75-4.00% in a 10-2 vote; Cook and Hammack dissent for a hike",
+    "2026-10-29": "September PCE hot: headline +0.5% m/m, 3.6% y/y (per press reports)",
+    "2026-10-30": "One-year low; silver below $50; oil above $104; tech selloff with forced selling"
+  },
+  "reads": {
+    "GC=F": "New 2026 low, below $4,000 on a closing basis",
+    "SI=F": "Below $50; fell harder than gold",
+    "CL=F": "Above $100: the inflation channel",
+    "^TNX": "Lower: long rates do not explain the drop",
+    "DX-Y.NYB": "Flat: the dollar is not the driver",
+    "^GSPC": "Tech-led selloff on Friday",
+    "^VIX": "Risk-off"
+  },
+  "extra_rows": [["Dec hike odds", "", "~85%", "", "Priced after the 28 Oct Fed meeting (CME FedWatch, per press)"]],
+  "bullets": [
+    {"title": "Fed turned more hawkish", "text": "the 28 Oct hold came with two dissents in favour of a hike. Futures price about an 85% chance of a December hike. Chair Warsh also flagged fewer policy meetings per year."},
+    {"title": "Inflation confirmed the oil story", "text": "September PCE rose 0.5% m/m, the most since March (3.6% y/y). Oil stays above $100 on the Iran conflict, which feeds the higher-for-longer rate view that weighs on non-yielding gold."},
+    {"title": "Not a rates-and-dollar trade", "text": "the 10-year yield fell and the dollar was flat while gold, silver and equities sold off together. Hike pricing sits in short rates; the selling looks like inflation-scare liquidation. Commerzbank also points to margin-call selling during the tech rout."},
+    {"title": "Bottom call", "text": "CPM Group expects a low within days of 30 Oct, but says a decisive break below $3,800 would invalidate that call."}
+  ],
+  "levels": [3800, 4000],
+  "watch_list": [
+    ["Tue 3 Nov: US midterm elections", "Political risk event; can move the dollar and yields"],
+    ["Fri 6 Nov: October jobs report", "A weak print would cut December hike odds, which supports gold"],
+    ["Oil above $100", "The main channel from the Iran conflict to rates and gold"],
+    ["$3,800", "CPM Group's line for its bottom call"],
+    ["$4,000", "Broken support, now the first level to reclaim"]
+  ],
+  "sources": [
+    {"name": "CNBC", "url": "https://www.cnbc.com/2026/10/28/fed-interest-rate-decision-october-2026.html"},
+    {"name": "CNN", "url": "https://www.cnn.com/2026/10/28/business/live-news/federal-reserve-interest-rate-october"},
+    {"name": "Bloomberg", "url": "https://www.bloomberg.com/news/articles/2026-10-28/gold-edges-lower-after-fed-holds-rates-with-limited-guidance"},
+    {"name": "Kitco", "url": "https://www.kitco.com/news/article/2026-10-30/gold-prices-plunge-one-year-low-below-3900-higher-oil-prices-fuel-fears"},
+    {"name": "USAGold", "url": "https://www.usagold.com/daily-precious-metals-market-report-october-30-2026/"},
+    {"name": "Yahoo Finance", "url": "https://finance.yahoo.com/markets/commodities/articles/gold-price-just-hit-yearly-195453224.html"},
+    {"name": "Discovery Alert", "url": "https://discoveryalert.com/analysis/gold-price-bottom-cpm-group-october-2026/"}
+  ]
+}
