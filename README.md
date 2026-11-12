@@ -14,11 +14,26 @@ how much cash a hedger must hold against margin calls. It is built around
 validation rather than results. Every number carries its sample size, the main
 claim is tested against three naive benchmarks and **loses to one of them**, and
 that outcome is reported rather than tuned away. About 7,700 lines of library
-code, 3,500 lines of tests (189 of them) and 6,300 lines of runnable scripts;
+code, 3,500 lines of tests (230 of them) and 6,300 lines of runnable scripts;
 written as a learning project, and readable as one.
 
 **Start here:** [docs/WALKTHROUGH.md](docs/WALKTHROUGH.md) (5 minutes) or
 [docs/RESULTS.md](docs/RESULTS.md) (all the numbers).
+
+### Where to find what
+
+| What | Where | Branch |
+|---|---|---|
+| Model and analysis code | [`src/goldmodel/`](src/goldmodel/), [`scripts/`](scripts/) | `main` |
+| Frozen numbers, tables and figures for the paper | [`results/`](results/) (`key_numbers.json` with run manifest, `tables/`, `figures/`) | `main` |
+| Exact package versions | [`requirements-lock.txt`](requirements-lock.txt) | `main` |
+| Paper brief and pre-freeze audit | [`PAPER_BRIEF.md`](PAPER_BRIEF.md), [`AUDIT.md`](AUDIT.md) | `main` |
+| Findings and concepts, per phase | [`docs/`](docs/) (table under *Documentation* below) | `main` |
+| Gold desk notes (PDF), separate from the paper | [`desk/reports/<date>/`](https://github.com/Niko-Glst/Commodity-Project/tree/weekly-desk/desk/reports) | `weekly-desk` |
+| How the weekly desk works | [`desk/README.md`](https://github.com/Niko-Glst/Commodity-Project/blob/weekly-desk/desk/README.md) | `weekly-desk` |
+
+The desk notes live on their own branch so the paper's code and frozen results
+stay unchanged.
 
 ---
 
@@ -268,7 +283,7 @@ Each is now covered by a regression test.
 
 ## Quality assurance
 
-- **167 tests**, no network dependency (synthetic frames, temporary directories)
+- **230 tests**, no network dependency (synthetic frames, temporary directories)
 - **Positive controls throughout:** the walk-forward validator must *find* a
   planted signal (out-of-sample R² > 0.5); the Kupiec test must *reject* a
   miscalibrated model. Without these, "no signal found" carries no information.
@@ -346,9 +361,14 @@ src/goldmodel/
   data/              FRED + ALFRED, Yahoo, Parquet cache, loader
   viz/               figures per analysis layer
 scripts/             one runnable script per analysis step
-tests/               167 tests, including positive controls
+tests/               230 tests, including positive controls
 docs/                findings per phase, concepts, backlog
+results/             frozen numbers, tables and figures cited in the paper
 output/figures/      23 figures, 20 in the main analysis (gitignored)
+PAPER_BRIEF.md       brief for writing the paper
+AUDIT.md             audit before the results freeze
+requirements-lock.txt exact package versions of the frozen run
+desk/                weekly gold desk notes (on branch weekly-desk only)
 ```
 
 ### Documentation

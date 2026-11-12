@@ -7,6 +7,23 @@ voorspelkracht, en Monte Carlo-simulatie voor margebehoefte.**
 
 ---
 
+### Waar vind je wat
+
+| Wat | Waar | Branch |
+|---|---|---|
+| Model- en analysecode | [`src/goldmodel/`](src/goldmodel/), [`scripts/`](scripts/) | `main` |
+| Bevroren getallen, tabellen en figuren voor de paper | [`results/`](results/) (`key_numbers.json` met run-manifest, `tables/`, `figures/`) | `main` |
+| Exacte pakketversies | [`requirements-lock.txt`](requirements-lock.txt) | `main` |
+| Paper-brief en audit vóór het bevriezen | [`PAPER_BRIEF.md`](PAPER_BRIEF.md), [`AUDIT.md`](AUDIT.md) | `main` |
+| Bevindingen en begrippen, per fase | [`docs/`](docs/) (tabel onder *Documentatie* hieronder) | `main` |
+| Gold desk notes (PDF), los van de paper | [`desk/reports/<datum>/`](https://github.com/Niko-Glst/Commodity-Project/tree/weekly-desk/desk/reports) | `weekly-desk` |
+| Hoe de wekelijkse desk werkt | [`desk/README.md`](https://github.com/Niko-Glst/Commodity-Project/blob/weekly-desk/desk/README.md) | `weekly-desk` |
+
+De desk notes staan op een eigen branch, zodat de code en bevroren resultaten
+van de paper ongewijzigd blijven.
+
+---
+
 ## De vraag die dit project beantwoordt
 
 > Ik houd een short goudfutures-positie aan als hedge, een kwartaal lang.
@@ -216,7 +233,7 @@ Elk van deze is nu gedekt door een regressietest.
 
 ## Kwaliteitsborging
 
-- **167 tests**, zonder netwerkafhankelijkheid (verzonnen dataframes, tijdelijke
+- **230 tests**, zonder netwerkafhankelijkheid (verzonnen dataframes, tijdelijke
   mappen)
 - **Positieve controles overal:** de walk-forward-validator moet een ingebouwd
   signaal *vinden* (R² out-of-sample > 0,5); de Kupiec-toets moet een verkeerd
@@ -296,9 +313,14 @@ src/goldmodel/
   data/              FRED + ALFRED, Yahoo, Parquet-cache, loader
   viz/               figuren per analyselaag
 scripts/             één uitvoerbaar script per analysestap
-tests/               167 tests, inclusief positieve controles
+tests/               230 tests, inclusief positieve controles
 docs/                bevindingen per fase, begrippen, backlog
+results/             bevroren getallen, tabellen en figuren uit de paper
 output/figures/      23 figuren, 20 in de hoofdanalyse (gitignored)
+PAPER_BRIEF.md       brief voor het schrijven van de paper
+AUDIT.md             audit vóór het bevriezen van de resultaten
+requirements-lock.txt exacte pakketversies van de bevroren run
+desk/                wekelijkse gold desk notes (alleen op branch weekly-desk)
 ```
 
 ### Documentatie
