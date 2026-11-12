@@ -6,6 +6,17 @@ so far against what actually happened, and renders a desk note (PDF).
 
 The forecast log only grows, so the track record maps more data every week.
 
+## Notes so far
+
+| Date | Note | Type |
+|---|---|---|
+| 30 Oct 2026 | [gold_desk_2026-10-30.pdf](reports/2026-10-30/gold_desk_2026-10-30.pdf) | Weekly, Friday close |
+| 12 Nov 2026 | [gold_desk_intraday_2026-11-12.pdf](reports/2026-11-12/gold_desk_intraday_2026-11-12.pdf) | One-off: intraday sell-off and volatility clustering ([README](reports/2026-11-12/README.md)) |
+
+Each note has its own folder `reports/<date>/` with the numbers behind it.
+Weekly notes add a row here; one-off notes also carry their data snapshot and
+scripts, because intraday data cannot be fetched again later.
+
 ## Layout
 
 ```
@@ -20,7 +31,7 @@ desk/
   store/
     live.jsonl        forecasts made on the day; append-only, one line per week
     backfill.jsonl.gz forecasts reconstructed for every Friday since 2006 (regenerable)
-  reports/<origin>/
+  reports/<origin>/    one folder per note (see "Notes so far")
     summary.json      computed numbers (written by `forecast`)
     news.json         news, reads and watch list (written by a person or agent)
     gold_desk_<origin>.pdf
