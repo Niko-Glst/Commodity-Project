@@ -10,7 +10,9 @@ The forecast log only grows, so the track record maps more data every week.
 
 | Date | Note | Type |
 |---|---|---|
+| 26 Oct 2026 | [gold_desk_note_2026-10-26.pdf](reports/2026-10-26/gold_desk_note_2026-10-26.pdf) | One-off: volatility and range review since 8 Oct |
 | 30 Oct 2026 | [gold_desk_2026-10-30.pdf](reports/2026-10-30/gold_desk_2026-10-30.pdf) | Weekly, Friday close |
+| 2 Nov 2026 | [gold_desk_note_2026-11-02.pdf](reports/2026-11-02/gold_desk_note_2026-11-02.pdf) | One-off: Monday update, 08:30 ET |
 | 12 Nov 2026 | [gold_desk_intraday_2026-11-12.pdf](reports/2026-11-12/gold_desk_intraday_2026-11-12.pdf) | One-off: intraday sell-off and volatility clustering ([README](reports/2026-11-12/README.md)) |
 
 Each note has its own folder `reports/<date>/` with the numbers behind it.
