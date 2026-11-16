@@ -136,6 +136,55 @@ def drift_qualifies(check: pd.DataFrame) -> bool:
                 and w["change"] <= 0)
 
 
+WINDOW_CANDIDATES = {"10 years": 2520, "5 years": 1260}   # trading days of returns
+WINDOW_P = 0.05 / len(WINDOW_CANDIDATES)                   # Bonferroni over the candidates
+
+
+def window_check(base: list[dict], rolling: list[dict], gold: pd.Series) -> pd.DataFrame:
+    """Rolling-sample forecasts against the expanding-sample forecasts, on the same origins.
+
+    Both sets use the same seed, so the comparison runs on common random numbers.
+    Scores are quantile losses of the log return; `change` < 0 means the rolling
+    sample scored better. The two halves split the shared origins at their median.
+    """
+    by_origin = {r["origin"]: r for r in base}
+    rows = []
+    for h, lags in ((5, 1), (21, 5)):
+        out = []
+        for rec in rolling:
+            ref = by_origin.get(rec["origin"])
+            pos = origin_position(gold.index, pd.Timestamp(rec["origin"]))
+            if ref is None or pos is None or pos + h >= len(gold):
+                continue
+            r = float(np.log(gold.iloc[pos + h] / rec["spot"]))
+            q0 = np.log(np.asarray(ref["grid"][str(h)]) / ref["spot"])
+            q1 = np.log(np.asarray(rec["grid"][str(h)]) / rec["spot"])
+            out.append((pd.Timestamp(rec["origin"]), quantile_loss(r, q0), quantile_loss(r, q1),
+                        not (q0[4] <= r <= q0[94]), not (q1[4] <= r <= q1[94])))
+        df = pd.DataFrame(out, columns=["origin", "l0", "l1", "m0", "m1"])
+        diff = (df["l1"] - df["l0"]).to_numpy()
+        early = (df["origin"] < df["origin"].median()).to_numpy()
+        t, p = diebold_mariano(diff, lags)
+        rows.append({
+            "h": h, "n": len(df), "first": df["origin"].min(),
+            "change": diff.mean() / df["l0"].mean(), "t": t, "p": p,
+            "change_early": diff[early].mean() / df.loc[early, "l0"].mean(),
+            "change_late": diff[~early].mean() / df.loc[~early, "l0"].mean(),
+            "inside90_expanding": 1 - df["m0"].mean(), "inside90_rolling": 1 - df["m1"].mean(),
+        })
+    return pd.DataFrame(rows)
+
+
+def window_qualifies(check: pd.DataFrame, p_max: float = WINDOW_P) -> bool:
+    """The switch rule, fixed before the first test (16 Nov 2026), same shape as the drift rule:
+    a rolling sample replaces the expanding one only if it improves the 1-month score with
+    p below the Bonferroni level, improves it in both halves, and does not worsen the
+    1-week score."""
+    m, w = check.set_index("h").loc[21], check.set_index("h").loc[5]
+    return bool(m["p"] < p_max and m["change"] < 0 and m["change_early"] < 0 and m["change_late"] < 0
+                and w["change"] <= 0)
+
+
 def coverage(scores: pd.DataFrame, last_origin: pd.Timestamp) -> pd.DataFrame:
     """Hit rates per horizon for all history, the last 52 weeks and live forecasts only."""
     windows = {

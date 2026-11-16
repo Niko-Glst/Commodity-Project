@@ -40,6 +40,9 @@ def cmd_forecast(args) -> None:
     out = REPORTS / origin
     out.mkdir(parents=True, exist_ok=True)
     summary = build(prices, fc, records, scores)
+    tested = out / "window_check.json"          # written by `window-check` for this origin, if run
+    if tested.exists():
+        summary["window_check"] = json.loads(tested.read_text(encoding="utf-8"))
     (out / "summary.json").write_text(json.dumps(summary, indent=1, default=str), encoding="utf-8")
     print(f"origin {origin}  spot {fc.spot:,.1f}  vol {fc.fit.vol_next:.1%}  records {len(records)}")
     print(f"wrote {out / 'summary.json'}")
@@ -68,6 +71,32 @@ def cmd_backfill(args) -> None:
     store.write_backfill(records)
 
 
+def cmd_window_check(args) -> None:
+    """Expanding sample vs each rolling window on every weekly origin since `--start`."""
+    from .backtest import WINDOW_CANDIDATES, window_check, window_qualifies
+
+    prices = data.load(refresh=not args.cached)
+    gold = data.gold(prices, args.end)
+    origins = _weekly_origins(gold, args.start, args.end)
+    returns_before = {o: gold.index.get_loc(o) for o in origins}   # returns available up to o
+    base = [make_forecast(gold.loc[:o], source="backfill", n_paths=args.paths)[0].to_record()
+            for o in origins]
+    rows = []
+    for name, window in WINDOW_CANDIDATES.items():
+        rolling = [make_forecast(gold.loc[:o], source="backfill", n_paths=args.paths, window=window)[0].to_record()
+                   for o in origins if returns_before[o] >= window]
+        check = window_check(base, rolling, gold).assign(window=name)
+        check["qualifies"] = window_qualifies(check)
+        rows.append(check)
+    out = pd.concat(rows, ignore_index=True)
+    with pd.option_context("display.width", 160, "display.float_format", "{:.4f}".format):
+        print(out.to_string(index=False))
+    target = Path(args.out) if args.out else REPORTS / f"{gold.index[-1]:%Y-%m-%d}" / "window_check.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(out.to_json(orient="records", indent=1, date_format="iso"), encoding="utf-8")
+    print(f"wrote {target}")
+
+
 def cmd_score(args) -> None:
     prices = data.load(refresh=False)
     records = store.read_records()
@@ -92,6 +121,13 @@ def main() -> None:
     p.add_argument("--paths", type=int, default=N_PATHS)
     p.add_argument("--cached", action="store_true")
     p.set_defaults(func=cmd_backfill)
+    p = sub.add_parser("window-check", help="test rolling estimation windows against the expanding sample")
+    p.add_argument("--start", default="2006-01-01")
+    p.add_argument("--end")
+    p.add_argument("--paths", type=int, default=N_PATHS)
+    p.add_argument("--cached", action="store_true")
+    p.add_argument("--out", help="JSON output (default: reports/<last close>/window_check.json)")
+    p.set_defaults(func=cmd_window_check)
     p = sub.add_parser("score", help="print the coverage table")
     p.set_defaults(func=cmd_score)
     args = parser.parse_args()

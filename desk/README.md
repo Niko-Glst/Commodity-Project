@@ -14,6 +14,7 @@ The forecast log only grows, so the track record maps more data every week.
 | 30 Oct 2026 | [gold_desk_2026-10-30.pdf](reports/2026-10-30/gold_desk_2026-10-30.pdf) | Weekly, Friday close |
 | 2 Nov 2026 | [gold_desk_note_2026-11-02.pdf](reports/2026-11-02/gold_desk_note_2026-11-02.pdf) | One-off: Monday update, 08:30 ET |
 | 12 Nov 2026 | [gold_desk_intraday_2026-11-12.pdf](reports/2026-11-12/gold_desk_intraday_2026-11-12.pdf) | One-off: intraday sell-off and volatility clustering ([README](reports/2026-11-12/README.md)) |
+| 13 Nov 2026 | [gold_desk_2026-11-13.pdf](reports/2026-11-13/gold_desk_2026-11-13.pdf) | Weekly, Friday close (covers two weeks: no weekly forecast was logged on 6 Nov); first rolling-window test |
 
 Each note has its own folder `reports/<date>/` with the numbers behind it.
 Weekly notes add a row here; one-off notes also carry their data snapshot and
@@ -75,6 +76,10 @@ Other commands:
 - `python -m gold_desk score` prints the coverage table.
 - `python -m gold_desk backfill --start 2006-01-01 --end <date>` rebuilds the
   backfill (about 20 minutes). Live records are never overwritten.
+- `python -m gold_desk window-check --end <date>` scores rolling estimation
+  windows against the full sample (about 15 minutes) and writes
+  `reports/<date>/window_check.json`; run it before `forecast` and the note
+  shows the result.
 
 ## news.json
 
@@ -134,6 +139,26 @@ The best candidate, half the expanding mean, is kept as a shadow test
 (`backtest.drift_check`). Every weekly note re-scores it on the growing record
 and says when it qualifies. Without drift the 1-month misses are lopsided (2.5%
 below the range, 7.8% above); the shadow drift would make that 2.9% and 6.6%.
+
+## Rolling estimation window
+
+The model is fitted on every close since 2003. On 16 Nov 2026 two rolling
+samples, the last 10 and the last 5 years of daily returns, were scored
+against that full sample on every weekly origin where they had enough data,
+with the same seed (common random numbers). The switch rule was fixed before
+the run and has the same shape as the drift rule, with a Bonferroni level for
+two candidates: a window goes in only if it improves the 1-month score with
+p < 0.025, improves it in both halves of its sample (split at the median
+origin), and does not worsen the 1-week score.
+
+| Window | Origins from | 1-month score | p | 1-week score | p |
+|---|---|---|---|---|---|
+| Last 10 years | Jan 2013 (717) | -0.07% | 0.37 | -0.11% | 0.051 |
+| Last 5 years | Jan 2008 (978) | +0.02% | 0.90 | -0.10% | 0.23 |
+
+Neither qualifies: the differences are about a tenth of a percent. The model
+stays on the full sample. Each weekly note shows what both windows would say
+for the week ahead (`summary.json` `rolling`), so the comparison stays visible.
 
 Backfilled forecasts use only data up to their own date, but today's data
 vintage. Live forecasts record what was known on the day; they are the clean

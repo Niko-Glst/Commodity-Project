@@ -105,17 +105,18 @@ def _legend(ax, ncol, order=None):
               bbox_to_anchor=(0.5, -0.12), ncol=ncol)
 
 
-def chart_scorecard(gold, prev: Forecast, origin, levels, out: Path) -> Path:
+def chart_scorecard(gold, prev: Forecast, origin, levels, out: Path, prefix: str = "Last week's ",
+                    since: str = "this week") -> Path:
     realised = gold.loc[prev.origin:origin].iloc[1:]
     n_show = max(len(realised), 5)
     extra = pd.bdate_range(realised.index[-1] + pd.Timedelta(days=1), periods=n_show - len(realised))
     dates = [*realised.index, *extra]
     fig, ax = plt.subplots(figsize=(7.2, 2.0))
-    _fan(ax, dates, prev.fan, prev.origin, prev.spot, "Last week's ")
+    _fan(ax, dates, prev.fan, prev.origin, prev.spot, prefix)
     hist = gold.loc[prev.origin - pd.Timedelta(days=45):prev.origin]
     ax.plot(hist.index, hist.values, color=INK2, lw=1.5, label="Gold, before last forecast")
     ax.plot([prev.origin, *realised.index], np.r_[prev.spot, realised.values], color=ORANGE, lw=2.0,
-            label="Gold, this week")
+            label=f"Gold, {since}")
     ax.scatter(realised.index[-1:], realised.values[-1:], s=26, color=ORANGE, edgecolor="white", lw=1.2, zorder=4)
     ax.axvline(prev.origin, color=AXIS, lw=0.8)
     ax.set_xlim(hist.index[0], dates[-1] + pd.Timedelta(days=1))
@@ -214,6 +215,12 @@ def build_pdf(origin: str, report_dir: Path, prices: pd.DataFrame, records: list
     }
     o = pd.Timestamp(origin)
     week = summary.get("week", {})
+    # A skipped week (no weekly forecast logged) makes the comparison span more than five days;
+    # the labels then name the forecast date instead of saying "last week".
+    one_week = not week or week.get("trading_days", 5) <= 5
+    p_date = f"{pd.Timestamp(week['prev_origin']):%d %b}" if week else ""
+    last_wk = "last week" if one_week else p_date
+    last_wks = "last week's" if one_week else f"the {p_date}"
 
     def header_footer(c, doc):
         c.saveState()
@@ -293,9 +300,10 @@ def build_pdf(origin: str, report_dir: Path, prices: pd.DataFrame, records: list
     wk_change = week.get("change", 0.0)
     story.append(kpis([
         ("Close", f"{fc.spot:,.0f}", f"{o:%a %d %b}", INK),
-        ("Week", f"{wk_change:+.1%}", f"from {week['prev_spot']:,.0f}" if week else "first note", signed(wk_change)),
+        ("Week" if one_week else f"Since {p_date}", f"{wk_change:+.1%}",
+         f"from {week['prev_spot']:,.0f}" if week else "first note", signed(wk_change)),
         ("Model vol", f"{m['vol_next']:.1%}",
-         f"last week {m['prev_vol_next']:.1%}" if m.get("prev_vol_next") else "annualised", INK),
+         f"{last_wk} {m['prev_vol_next']:.1%}" if m.get("prev_vol_next") else "annualised", INK),
         ("1-week 90% range", f"{fwd[0]['q5']:,.0f}-{fwd[0]['q95']:,.0f}", f"to {pd.Timestamp(fwd[0]['date']):%d %b}", INK),
         ("From peak", f"{ctx['from_peak']:+.1%}", f"{ctx['peak']:,.0f} on {pd.Timestamp(ctx['peak_date']):%d %b %Y}", RED),
     ]))
@@ -305,7 +313,7 @@ def build_pdf(origin: str, report_dir: Path, prices: pd.DataFrame, records: list
 
     # ---- The week
     if week:
-        story.append(Paragraph("The week", S["h2"]))
+        story.append(Paragraph("The week" if one_week else f"Since the last forecast ({p_date})", S["h2"]))
         notes = news.get("day_notes", {})
         rows = [["Date", "Close", "Day", "What happened"]]
         for d in week["days"]:
@@ -335,14 +343,16 @@ def build_pdf(origin: str, report_dir: Path, prices: pd.DataFrame, records: list
     # ---- Scorecard
     lf = summary.get("last_forecast")
     if prev is not None and lf:
-        block = [Paragraph("Scorecard: last week's ranges vs what happened", S["h2"]),
-                 img(chart_scorecard(gold, prev, o, levels, tmp / "score.png")), Spacer(1, 3)]
+        block = [Paragraph(f"Scorecard: {last_wks} ranges vs what happened", S["h2"]),
+                 img(chart_scorecard(gold, prev, o, levels, tmp / "score.png",
+                                     prefix="Last week's " if one_week else f"{p_date} ",
+                                     since="this week" if one_week else f"since {p_date}")), Spacer(1, 3)]
         pit = lf["pit"]
         verdict = (tag("Inside range", GREEN) if 0.05 <= pit <= 0.95 else tag("Outside 90% range", RED))
         if 0.05 <= pit < 0.15 or 0.85 < pit <= 0.95:
             verdict = tag("Inside, near the edge", AMBER)
         x_sigma = lf["worst_day_x_sigma"] or 0
-        rows = [["Check", "Last week's model", "Realised", "Verdict"],
+        rows = [["Check", "Last week's model" if one_week else f"Model of {p_date}", "Realised", "Verdict"],
                 [f"Close on {o:%d %b}", f"90% range {lf['band90'][0]:,.0f} to {lf['band90'][1]:,.0f}",
                  f"{fc.spot:,.0f}  ({pit:.0%} percentile)", verdict],
                 ["Biggest daily drop", f"typical day {lf['prev_daily_sigma']:.2%}",
@@ -415,9 +425,38 @@ def build_pdf(origin: str, report_dir: Path, prices: pd.DataFrame, records: list
                       "improves the 1-month score with p &lt; 0.05, in both halves of the sample, without "
                       "worsening the 1-week score.", S["cap"])]))
 
+    roll = summary.get("rolling")
+    if roll:
+        tested = {(r["window"], r["h"]): r for r in summary.get("window_check", [])}
+        any_q = any(r.get("qualifies") for r in tested.values())
+        rows = [["Sample", "Vol next day", "1-week 90% range", "1-month 90% range", "1-month score", "p-value",
+                 "Both halves"],
+                ["All closes since 2003 (used)", f"{m['vol_next']:.1%}", f"{fwd[0]['q5']:,.0f}-{fwd[0]['q95']:,.0f}",
+                 f"{fwd[2]['q5']:,.0f}-{fwd[2]['q95']:,.0f}", "", "", ""]]
+        for r in roll:
+            t = tested.get((r["window"], 21), {})
+            both = ("better" if t.get("change_early", 0) < 0 and t.get("change_late", 0) < 0 else "mixed") if t else ""
+            rows.append([f"Last {r['window']}", f"{r['vol_next']:.1%}", f"{r['week90'][0]:,.0f}-{r['week90'][1]:,.0f}",
+                         f"{r['month90'][0]:,.0f}-{r['month90'][1]:,.0f}",
+                         f"{t['change']:+.2%}" if t else "", f"{t['p']:.2f}" if t else "", both])
+        text = ("The model is fitted on every close since 2003. A rolling sample reacts faster when the market "
+                "changes, but has less data for the tails. ")
+        if tested:
+            first = min(pd.Timestamp(r["first"]) for r in tested.values())
+            text += (f"Both windows were scored against the full sample on every weekly forecast since "
+                     f"{first:%b %Y} for which they had enough data, with the same random numbers. Verdict: "
+                     + (tag("A rolling window qualifies", GREEN) if any_q else tag("Keep the full sample", INK)) + ".")
+        story.append(KeepTogether([
+            Paragraph("Rolling estimation window (shadow test)", S["h2"]), Paragraph(text, S["body"]), Spacer(1, 2),
+            table(rows, [0.24, 0.11, 0.15, 0.15, 0.12, 0.09, 0.14]),
+            Paragraph("Score: average 1-month quantile loss vs the full sample; negative is better. A window goes in "
+                      "only if it improves the 1-month score with p &lt; 0.025 (two candidates), in both halves of "
+                      "its sample, without worsening the 1-week score. Rule fixed before the test (16 Nov 2026).",
+                      S["cap"])]))
+
     # ---- Model update
     block = [Paragraph("Model update", S["h2"]), img(chart_vol(records, gold, tmp / "vol.png")), Spacer(1, 3)]
-    rows = [["Parameter", "This week", "Last week", "What it means"],
+    rows = [["Parameter", "This week", "Last week" if one_week else p_date, "What it means"],
             ["Volatility, next day", f"{m['vol_next']:.1%}", f"{m['prev_vol_next']:.1%}" if m.get("prev_vol_next") else "",
              "Annualised; drives the width of all ranges"],
             ["Shock weight (alpha)", f"{m['alpha']:.3f}", f"{m['prev_alpha']:.3f}" if m.get("prev_alpha") else "",

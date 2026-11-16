@@ -57,9 +57,15 @@ class Fit:
         return float(np.sqrt(self.omega / (1 - self.persistence) * DAYS_PER_YEAR))
 
 
-def fit(gold: pd.Series) -> Fit:
-    """Fit on daily log returns (in percent, for numerical stability) and scale back."""
+def fit(gold: pd.Series, window: int | None = None) -> Fit:
+    """Fit on daily log returns (in percent, for numerical stability) and scale back.
+
+    `window` limits the fit to the last `window` returns (a rolling sample);
+    None uses every close since 2003 (the expanding sample).
+    """
     returns = np.log(gold).diff().dropna() * 100.0
+    if window is not None:
+        returns = returns.iloc[-window:]
     result = arch_model(returns, vol="GARCH", p=1, q=1, dist="t", mean="Constant").fit(
         disp="off", show_warning=False
     )
@@ -124,10 +130,11 @@ class Forecast:
 
 
 def make_forecast(
-    gold: pd.Series, source: str = "live", n_paths: int = N_PATHS, seed: int = SEED
+    gold: pd.Series, source: str = "live", n_paths: int = N_PATHS, seed: int = SEED,
+    window: int | None = None,
 ) -> tuple[Forecast, np.ndarray]:
     """Forecast from the last close in `gold`; returns the forecast and the simulated paths."""
-    f = fit(gold)
+    f = fit(gold, window)
     paths = simulate(f, n_paths=n_paths, seed=seed)
     spot = float(gold.iloc[-1])
     prices = spot * np.exp(paths[:, 1:])

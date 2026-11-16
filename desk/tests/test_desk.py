@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from gold_desk.backtest import diebold_mariano, drift_check, kupiec, quantile_loss, score
+from gold_desk.backtest import (diebold_mariano, drift_check, kupiec, quantile_loss, score, window_check,
+                                window_qualifies)
 from gold_desk.data import drop_unfinished_day
 from gold_desk.model import FAN_Q, GRID_Q, HORIZONS, Fit, Forecast, fit, make_forecast, simulate
 
@@ -78,6 +79,33 @@ def test_drift_check_prefers_drift_on_a_trending_series():
              "grid": {str(h): list(gold[d] * grid) for h in HORIZONS}} for d in idx[100:1250:5]]
     check = drift_check(recs, gold).set_index("h")
     assert check.loc[21, "change"] < 0 and check.loc[5, "change"] < 0
+
+
+def test_rolling_window_fits_only_the_last_returns():
+    gold = _gold(n=1500)
+    assert fit(gold, window=800).n_obs == 800
+    assert fit(gold).n_obs == 1499
+    # the window is the tail: refitting on the cut series gives the same estimates
+    assert fit(gold, window=800).alpha == pytest.approx(fit(gold.iloc[-801:]).alpha)
+
+
+def test_window_check_scores_the_better_spread_lower():
+    """A forecast whose spread matches the realised moves beats one that is far too wide."""
+    rng = np.random.default_rng(3)
+    n = 1400
+    idx = pd.bdate_range("2010-01-01", periods=n)
+    gold = pd.Series(1000 * np.exp(np.cumsum(rng.normal(0, 0.01, n))), index=idx)
+    z = np.percentile(rng.normal(0, 1, 200_000), GRID_Q)
+
+    def recs(scale):
+        return [{"origin": f"{d:%Y-%m-%d}", "spot": float(gold[d]), "source": "backfill",
+                 "grid": {str(h): list(gold[d] * np.exp(z * scale * np.sqrt(h))) for h in HORIZONS}}
+                for d in idx[50:1300:5]]
+
+    check = window_check(recs(0.03), recs(0.01), gold).set_index("h")
+    assert check.loc[21, "change"] < 0 and check.loc[5, "change"] < 0
+    assert window_qualifies(check.reset_index())
+    assert not window_qualifies(window_check(recs(0.01), recs(0.03), gold))
 
 
 def test_unfinished_day_is_dropped_only_before_the_close():

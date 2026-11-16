@@ -9,9 +9,10 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from .backtest import SHADOW_SHRINK, coverage, drift_check, drift_qualifies, origin_position
+from .backtest import (SHADOW_SHRINK, WINDOW_CANDIDATES, coverage, drift_check, drift_qualifies,
+                       origin_position)
 from .data import GOLD, TICKERS
-from .model import FAN_Q, GRID_Q, HORIZONS, Forecast
+from .model import FAN_Q, GRID_Q, HORIZONS, Forecast, make_forecast
 
 
 def _pit_at(prev: Forecast, h: int, price: float) -> tuple[float, bool]:
@@ -122,4 +123,15 @@ def build(prices: pd.DataFrame, fc: Forecast, records: list[dict], scores: pd.Da
         "qualifies": drift_qualifies(check),
         "rows": check.to_dict("records"),
     }
+
+    # Shadow: what a rolling estimation window would say this week (the note uses the full sample)
+    out["rolling"] = []
+    for name, window in WINDOW_CANDIDATES.items():
+        alt, _ = make_forecast(gold, window=window)
+        out["rolling"].append({
+            "window": name, "returns": window, "vol_next": alt.fit.vol_next,
+            "vol_long_run": alt.fit.vol_long_run, "persistence": alt.fit.persistence, "nu": alt.fit.nu,
+            "week90": [round(float(alt.fan[5][4]), 2), round(float(alt.fan[95][4]), 2)],
+            "month90": [round(float(alt.fan[5][-1]), 2), round(float(alt.fan[95][-1]), 2)],
+        })
     return out
