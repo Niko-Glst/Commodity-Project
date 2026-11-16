@@ -1,0 +1,58 @@
+[
+ {
+  "h":5,
+  "n":721,
+  "first":"2013-01-18T00:00:00.000",
+  "change":-0.0010892481,
+  "t":-1.9501992769,
+  "p":0.051152372,
+  "change_early":-0.0003625483,
+  "change_late":-0.0016555903,
+  "inside90_expanding":0.9042995839,
+  "inside90_rolling":0.9015256588,
+  "window":"10 years",
+  "qualifies":false
+ },
+ {
+  "h":21,
+  "n":717,
+  "first":"2013-01-18T00:00:00.000",
+  "change":-0.0007271981,
+  "t":-0.8930515278,
+  "p":0.3718295791,
+  "change_early":-0.0004073714,
+  "change_late":-0.0009821827,
+  "inside90_expanding":0.9023709902,
+  "inside90_rolling":0.8981868898,
+  "window":"10 years",
+  "qualifies":false
+ },
+ {
+  "h":5,
+  "n":982,
+  "first":"2008-01-18T00:00:00.000",
+  "change":-0.0009818663,
+  "t":-1.206749187,
+  "p":0.2275287502,
+  "change_early":-0.0002232768,
+  "change_late":-0.0018648715,
+  "inside90_expanding":0.9073319756,
+  "inside90_rolling":0.9022403259,
+  "window":"5 years",
+  "qualifies":false
+ },
+ {
+  "h":21,
+  "n":978,
+  "first":"2008-01-18T00:00:00.000",
+  "change":0.0001697742,
+  "t":0.1303057949,
+  "p":0.8963244955,
+  "change_early":0.0005498974,
+  "change_late":-0.000261777,
+  "inside90_expanding":0.9038854806,
+  "inside90_rolling":0.8967280164,
+  "window":"5 years",
+  "qualifies":false
+ }
+]

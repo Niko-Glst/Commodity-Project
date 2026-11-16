@@ -1,0 +1,59 @@
+{
+  "title": "Desk note: weekly update",
+  "bottom_line": "Gold ended the fortnight where it started: <b>3,886</b>, -0.3% since the last weekly forecast on 30 Oct, after a round trip to 4,114 on 9 Nov. The first week ran on oil, which fell on US-Iran diplomacy; the second on rates, as strong payrolls and hot CPI and PPI lifted the 10-year yield to 5.15% and the dollar to its highest close of 2026, and Thursday's 3,885 was the lowest close of the year. The close sits at the <b>47th percentile</b> of the 30 Oct forecast, inside its 90% range, and inside the ranges of the 2 Nov and 12 Nov notes. Model volatility is up to <b>23.5%</b> from 21.3%: the model gives a 62% chance of trading below $3,800 within a month and 55% of trading back above $4,000; the two overlap, because one path can do both. Next: Warsh on Monday, retail sales on Tuesday and the FOMC minutes on Wednesday.",
+  "day_notes": {
+    "2026-11-02": "Oil falls over 7% as the US and Iran signal openness to talks; December hike odds ease",
+    "2026-11-03": "US midterm elections; small pullback",
+    "2026-11-04": "Biggest daily gain since August as oil slumps further on Iran diplomacy hopes",
+    "2026-11-05": "AI-led equity rout: S&amp;P 500 -4.4%, VIX near 28; gold edges higher",
+    "2026-11-06": "October payrolls +165k vs about 65k expected; December hike odds rise to about 81%",
+    "2026-11-09": "Higher as the dollar eases",
+    "2026-11-10": "October CPI hot: headline +0.4% m/m vs +0.3% expected, core +0.3% vs +0.2%",
+    "2026-11-11": "Dollar firms; gold slips to $4,000",
+    "2026-11-12": "Worst day of the fortnight: yields and the dollar up, oil higher after Trump's Iran remarks",
+    "2026-11-13": "Flat after October PPI: +0.3% m/m vs about +0.4% expected, 6.5% y/y"
+  },
+  "reads": {
+    "GC=F": "Round trip: up to 4,114 on 9 Nov, back to the 30 Oct level",
+    "SI=F": "Same round trip; COMEX silver at a one-year low on Friday (per Rio Times)",
+    "CL=F": "Down 15% on Iran diplomacy: the October inflation channel has eased",
+    "^TNX": "Up 22 bp to 5.15%: now the main headwind",
+    "DX-Y.NYB": "Highest close of 2026; the classic rates-and-dollar channel is back",
+    "^GSPC": "Flat net, after the 5 Nov AI sell-off and rebound",
+    "^VIX": "Spiked to 28 on 5 Nov, back below 20"
+  },
+  "extra_rows": [["Dec hike odds", "~85%", "25 bp fully priced", "higher", "50 bp at about 9-12% (CME FedWatch, per press)"]],
+  "bullets": [
+    {"title": "Two weeks, two drivers", "text": "in the first week gold traded opposite to oil, as it did in October: crude fell on US-Iran diplomacy and gold rallied to 4,114. In the second week the driver switched to rates: the 10-year yield rose from 4.86% to 5.15% and the dollar index from 102.3 to 103.4 while oil kept falling, and gold gave the whole rally back."},
+    {"title": "Data revived the hike story", "text": "October payrolls rose 165,000 against about 65,000 expected; October CPI beat on both headline and core; and PPI rose 6.5% on the year, the most since November 2022 (Kitco). A 25 bp hike at the 8-9 December FOMC is now fully priced, and the odds of 50 bp rose from about 1% before CPI to about 11% (CME FedWatch, per press)."},
+    {"title": "Iran headlines cut both ways", "text": "Thursday's drop came as oil rose on Trump's remark that the US no longer wants a deal with Iran (per Panthere Group); by Friday reports said he had eased fears of a renewed war, and oil headed for a second weekly loss (The National). Single-outlet attributions; treat with care."},
+    {"title": "Demand backdrop", "text": "the World Gold Council's Q3 report shows central-bank buying up 42% on the year at 321 tonnes, but it halved its 2026 investment-demand growth forecast to 200 tonnes. ETF flows slowed in October but stayed positive (Money Metals)."}
+  ],
+  "levels": [3800, 4000],
+  "watch_list": [
+    ["Mon 16 Nov, 12:00 ET: Fed Chair Warsh speaks", "First word from the chair since the hot CPI and PPI"],
+    ["Tue 17 Nov, 08:30 ET: October retail sales", "Strong spending would push yields toward new highs"],
+    ["Wed 18 Nov, 14:00 ET: FOMC minutes (27-28 Oct)", "How many officials favour a hike, and how big"],
+    ["Tue 17 Nov, after the close: Nvidia earnings", "Another AI sell-off could bring back forced selling, as on 5 Nov"],
+    ["$3,800", "62% of model paths trade below it within a month; Thursday's spot low was $3,852 (Kitco)"],
+    ["$4,000", "Failed again on 11 Nov; first level to reclaim"]
+  ],
+  "sources": [
+    {"name": "CNBC", "url": "https://www.cnbc.com/2026/11/02/oil-prices-fall-as-iran-us-pursue-diplomacy.html"},
+    {"name": "Kitco", "url": "https://www.kitco.com/news/article/2026-11-02/gold-silver-rebound-iran-diplomacy-sends-oil-lower-easing-fed-tightening"},
+    {"name": "investingLive", "url": "https://investinglive.com/commodities/gold-jumps-as-oil-slumps-on-iran-diplomacy-hopes-an-early-test-of-citi-s-thesis/"},
+    {"name": "CNN", "url": "https://www.cnn.com/2026/11/05/investing/tech-heavy-nasdaq-plunges"},
+    {"name": "FX Broker Trust", "url": "https://www.fxbrokertrust.com/insights/us-october-nonfarm-payrolls-surge-165k-dollar-rises-gold-dips"},
+    {"name": "USAGOLD", "url": "https://www.usagold.com/daily-precious-metals-market-report-november-10-2026/"},
+    {"name": "Bloomingbit", "url": "https://en.bloomingbit.io/feed/news/124114"},
+    {"name": "Panthere Group", "url": "https://www.pantheregroup.com/2026/11/12/gold-plummets-as-expectations-on-u-s-iran-deal-sink-pushing-crude-oil-higher/"},
+    {"name": "The National", "url": "https://www.thenationalnews.com/business/energy/2026/11/13/oil-on-track-to-post-second-weekly-decline-as-trump-eases-fears-of-renewed-war-with-iran/"},
+    {"name": "Kitco (PPI)", "url": "https://www.kitco.com/news/article/2026-11-13/gold-rebounds-13-month-low-ppi-complicates-fed-outlook-kitco-am-report"},
+    {"name": "Rio Times", "url": "https://www.riotimesonline.com/gold-silver-precious-metals-friday-november-13-2026/"},
+    {"name": "World Gold Council", "url": "https://www.gold.org/news-and-events/press-releases/central-bank-buying-and-etf-inflows-support-gold-demand-q3/"},
+    {"name": "Money Metals", "url": "https://www.moneymetals.com/news/2026/11/06/etf-gold-flows-slow-in-october-but-remain-positive-005348"},
+    {"name": "Federal Reserve", "url": "https://www.federalreserve.gov/newsevents/2026-november.htm"},
+    {"name": "Gotrade", "url": "https://www.heygotrade.com/en/news/weekly-economic-outlook-2026-11-16/"},
+    {"name": "FXEmpire", "url": "https://www.fxempire.com/forecasts/article/the-week-ahead-nvidia-earnings-anthropic-ipo-test-ai-trade-1644719"}
+  ]
+}
