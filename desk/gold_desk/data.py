@@ -61,6 +61,24 @@ def load(refresh: bool = False) -> pd.DataFrame:
     return pd.read_csv(PRICES, index_col=0, parse_dates=True)
 
 
+GVZ = "^GVZ"                 # CBOE Gold ETF Volatility Index: 30-day implied vol of GLD options, since Jun 2008
+GVZ_CACHE = CACHE / "gvz.csv"
+
+
+def gvz(refresh: bool = False) -> pd.Series:
+    """Daily GVZ closes in vol points (e.g. 25.4), cached next to the prices."""
+    if refresh or not GVZ_CACHE.exists():
+        import yfinance as yf
+
+        s = yf.download(GVZ, start="2008-01-01", progress=False, auto_adjust=False)["Close"].squeeze().dropna()
+        s.index = pd.to_datetime(s.index).tz_localize(None)
+        s = drop_unfinished_day(s.to_frame()).iloc[:, 0]
+        CACHE.mkdir(exist_ok=True)
+        s.rename("GVZ").to_csv(GVZ_CACHE)
+        return s.rename("GVZ")
+    return pd.read_csv(GVZ_CACHE, index_col=0, parse_dates=True).iloc[:, 0]
+
+
 def gold(prices: pd.DataFrame, asof: str | None = None) -> pd.Series:
     s = prices[GOLD].dropna()
     return s.loc[:asof] if asof else s

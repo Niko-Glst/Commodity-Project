@@ -97,6 +97,23 @@ def cmd_window_check(args) -> None:
     print(f"wrote {target}")
 
 
+def cmd_iv_check(args) -> None:
+    """GVZ implied volatility vs plain GARCH, scored on every stored weekly forecast."""
+    from .backtest import IV_CANDIDATES, iv_check, iv_qualifies
+
+    prices = data.load(refresh=not args.cached)
+    gold = data.gold(prices)
+    records = store.read_records()
+    out = iv_check(records, gold, data.gvz(refresh=not args.cached))
+    out["qualifies"] = out["candidate"].map({c: iv_qualifies(out, c) for c in IV_CANDIDATES})
+    with pd.option_context("display.width", 200, "display.float_format", "{:.4f}".format):
+        print(out.to_string(index=False))
+    last = max(r["origin"] for r in records if r["source"] == "live")
+    target = Path(args.out) if args.out else REPORTS / last / "iv_check.json"
+    target.write_text(out.to_json(orient="records", indent=1, date_format="iso"), encoding="utf-8")
+    print(f"wrote {target}")
+
+
 def cmd_score(args) -> None:
     prices = data.load(refresh=False)
     records = store.read_records()
@@ -128,6 +145,10 @@ def main() -> None:
     p.add_argument("--cached", action="store_true")
     p.add_argument("--out", help="JSON output (default: reports/<last close>/window_check.json)")
     p.set_defaults(func=cmd_window_check)
+    p = sub.add_parser("iv-check", help="test GVZ implied volatility against the plain GARCH forecasts")
+    p.add_argument("--cached", action="store_true")
+    p.add_argument("--out", help="JSON output (default: reports/<last live origin>/iv_check.json)")
+    p.set_defaults(func=cmd_iv_check)
     p = sub.add_parser("score", help="print the coverage table")
     p.set_defaults(func=cmd_score)
     args = parser.parse_args()

@@ -185,6 +185,104 @@ def window_qualifies(check: pd.DataFrame, p_max: float = WINDOW_P) -> bool:
                 and w["change"] <= 0)
 
 
+IV_CANDIDATES = ("GVZ, bias-corrected", "Blend: half GARCH, half GVZ")
+IV_P = 0.05 / len(IV_CANDIDATES)        # Bonferroni over the candidates
+IV_LAG_DAYS = 1                         # use the GVZ close of the day before the origin (see iv_targets)
+IV_MIN_HISTORY = 252                    # days of realised/implied ratios before the bias correction is trusted
+
+
+def garch_vol_21(fit: dict, h: int = 21) -> float:
+    """Annualised average volatility the GARCH fit expects over the next h days."""
+    pers = fit["alpha"] + fit["beta"]
+    if pers >= 1:
+        return float(np.sqrt(fit["var_next"] * 252))
+    long_run = fit["omega"] / (1 - pers)
+    path = long_run + pers ** np.arange(h) * (fit["var_next"] - long_run)
+    return float(np.sqrt(path.mean() * 252))
+
+
+def iv_targets(gold: pd.Series, gvz: pd.Series) -> pd.DataFrame:
+    """Per gold trading day: GVZ of the previous day, and the bias correction known on that day.
+
+    GVZ closes at 16:15 ET, after the COMEX settlement (13:30 ET) that the model uses, so the
+    same-day value would peek about three hours ahead. The previous day's close avoids that.
+    Implied vol carries a risk premium: it usually sits above the vol that follows. The
+    correction is the median ratio of realised 21-day vol to the GVZ that preceded it, over
+    all ratios already complete on the day (each needs 21 days after its start), so it uses
+    no future data.
+    """
+    r = np.log(gold).diff()
+    iv = gvz.reindex(gold.index).ffill().shift(IV_LAG_DAYS) / 100
+    realised_fwd = np.sqrt((r**2).rolling(21).mean().shift(-21) * 252)
+    ratio = realised_fwd / iv
+    known = ratio.shift(21)                       # the ratio starting on day s is known on day s + 21
+    correction = known.expanding(min_periods=IV_MIN_HISTORY).median()
+    return pd.DataFrame({"iv": iv, "correction": correction, "iv_corrected": iv * correction})
+
+
+def iv_scale(rec: dict, targets: pd.DataFrame, candidate: str) -> float | None:
+    """Factor on the zero-drift log returns that moves the GARCH 1-month vol to the candidate's target.
+
+    Scaling the log returns by k is the same GARCH path with omega and the starting variance
+    multiplied by k squared; tails and volatility dynamics are kept.
+    """
+    row = targets.loc[pd.Timestamp(rec["origin"])] if pd.Timestamp(rec["origin"]) in targets.index else None
+    if row is None or pd.isna(row["iv_corrected"]):
+        return None
+    garch = garch_vol_21(rec["fit"])
+    target = row["iv_corrected"] if candidate == IV_CANDIDATES[0] else 0.5 * (garch + row["iv_corrected"])
+    return float(target / garch)
+
+
+def iv_check(records: list[dict], gold: pd.Series, gvz: pd.Series) -> pd.DataFrame:
+    """Score GVZ-based volatility against the plain GARCH forecasts, on the same stored forecasts.
+
+    A scaled forecast's quantiles follow exactly from the stored ones: the log-return quantiles
+    are multiplied by k, so nothing is re-simulated.
+    """
+    targets = iv_targets(gold, gvz)
+    rows = []
+    for cand in IV_CANDIDATES:
+        for h, lags in ((5, 1), (21, 5)):
+            out = []
+            for rec in records:
+                pos = origin_position(gold.index, pd.Timestamp(rec["origin"]))
+                if pos is None or pos + h >= len(gold):
+                    continue
+                k = iv_scale(rec, targets, cand)
+                if k is None:
+                    continue
+                r = float(np.log(gold.iloc[pos + h] / rec["spot"]))
+                q0 = np.log(np.asarray(rec["grid"][str(h)]) / rec["spot"])
+                q1 = k * q0
+                out.append((pd.Timestamp(rec["origin"]), quantile_loss(r, q0), quantile_loss(r, q1),
+                            not (q0[4] <= r <= q0[94]), not (q1[4] <= r <= q1[94]), r < q1[4], r > q1[94], k))
+            df = pd.DataFrame(out, columns=["origin", "l0", "l1", "m0", "m1", "b1", "a1", "k"])
+            diff = (df["l1"] - df["l0"]).to_numpy()
+            early = (df["origin"] < df["origin"].median()).to_numpy()
+            t, p = diebold_mariano(diff, lags)
+            rows.append({
+                "candidate": cand, "h": h, "n": len(df), "first": df["origin"].min(),
+                "change": diff.mean() / df["l0"].mean(), "t": t, "p": p,
+                "change_early": diff[early].mean() / df.loc[early, "l0"].mean(),
+                "change_late": diff[~early].mean() / df.loc[~early, "l0"].mean(),
+                "inside90_garch": 1 - df["m0"].mean(), "inside90_iv": 1 - df["m1"].mean(),
+                "below5_iv": df["b1"].mean(), "above95_iv": df["a1"].mean(),
+                "scale_median": df["k"].median(),
+            })
+    return pd.DataFrame(rows)
+
+
+def iv_qualifies(check: pd.DataFrame, candidate: str, p_max: float = IV_P) -> bool:
+    """The switch rule, fixed before the first test (17 Nov 2026), same shape as the drift and
+    window rules: a GVZ candidate goes in only if it improves the 1-month score with p below
+    the Bonferroni level, improves it in both halves, and does not worsen the 1-week score."""
+    c = check[check["candidate"] == candidate].set_index("h")
+    m, w = c.loc[21], c.loc[5]
+    return bool(m["p"] < p_max and m["change"] < 0 and m["change_early"] < 0 and m["change_late"] < 0
+                and w["change"] <= 0)
+
+
 def coverage(scores: pd.DataFrame, last_origin: pd.Timestamp) -> pd.DataFrame:
     """Hit rates per horizon for all history, the last 52 weeks and live forecasts only."""
     windows = {

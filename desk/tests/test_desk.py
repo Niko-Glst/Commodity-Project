@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from gold_desk.backtest import (diebold_mariano, drift_check, kupiec, quantile_loss, score, window_check,
-                                window_qualifies)
+from gold_desk.backtest import (diebold_mariano, drift_check, garch_vol_21, iv_check, iv_qualifies, iv_targets,
+                                kupiec, quantile_loss, score, window_check, window_qualifies)
 from gold_desk.data import drop_unfinished_day
 from gold_desk.model import FAN_Q, GRID_Q, HORIZONS, Fit, Forecast, fit, make_forecast, simulate
 
@@ -106,6 +106,48 @@ def test_window_check_scores_the_better_spread_lower():
     assert check.loc[21, "change"] < 0 and check.loc[5, "change"] < 0
     assert window_qualifies(check.reset_index())
     assert not window_qualifies(window_check(recs(0.01), recs(0.03), gold))
+
+
+def test_garch_vol_21_is_flat_at_the_long_run_level():
+    fit_ = {"omega": 2e-6, "alpha": 0.05, "beta": 0.93, "var_next": 2e-6 / 0.02}
+    assert garch_vol_21(fit_) == pytest.approx(np.sqrt(1e-4 * 252))
+    high = dict(fit_, var_next=4e-4)
+    assert np.sqrt(1e-4 * 252) < garch_vol_21(high) < np.sqrt(4e-4 * 252)
+
+
+def test_iv_targets_use_no_future_data():
+    """Changing everything after a date leaves the GVZ target and its correction up to that date unchanged."""
+    gold = _gold(n=900, seed=4)
+    gvz = pd.Series(np.linspace(15, 30, len(gold)), index=gold.index)
+    cut = gold.index[600]
+    base = iv_targets(gold, gvz)
+    gold2, gvz2 = gold.copy(), gvz.copy()
+    gold2[gold2.index > cut] *= 1.5
+    gvz2[gvz2.index >= cut] = 80.0          # the same-day GVZ must not be used either
+    moved = iv_targets(gold2, gvz2)
+    pd.testing.assert_frame_equal(base.loc[:cut], moved.loc[:cut])
+
+
+def test_iv_check_prefers_the_right_volatility():
+    """Forecasts that are twice too wide get beaten once the implied vol tells the truth."""
+    rng = np.random.default_rng(5)
+    n = 1500
+    idx = pd.bdate_range("2010-01-01", periods=n)
+    sigma = 0.01
+    gold = pd.Series(1000 * np.exp(np.cumsum(rng.normal(0, sigma, n))), index=idx)
+    gvz = pd.Series(100 * sigma * np.sqrt(252), index=idx)              # implied = true vol
+    z = np.percentile(rng.normal(0, 1, 200_000), GRID_Q)
+    wide = 2 * sigma
+    fit_ = {"omega": wide**2 * 0.02, "alpha": 0.05, "beta": 0.93, "var_next": wide**2,
+            "mu": 0.0, "nu": 30.0, "n_obs": 1000}
+    recs = [{"origin": f"{d:%Y-%m-%d}", "spot": float(gold[d]), "source": "backfill", "fit": fit_,
+             "grid": {str(h): list(gold[d] * np.exp(z * wide * np.sqrt(h))) for h in HORIZONS}}
+            for d in idx[300:1450:5]]
+    check = iv_check(recs, gold, gvz).set_index(["candidate", "h"])
+    gvz_only = check.loc["GVZ, bias-corrected"]
+    assert gvz_only.loc[21, "change"] < 0 and gvz_only.loc[5, "change"] < 0
+    assert gvz_only.loc[21, "scale_median"] == pytest.approx(0.5, abs=0.1)
+    assert iv_qualifies(check.reset_index(), "GVZ, bias-corrected")
 
 
 def test_unfinished_day_is_dropped_only_before_the_close():
