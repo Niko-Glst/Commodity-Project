@@ -80,6 +80,9 @@ Other commands:
   windows against the full sample (about 15 minutes) and writes
   `reports/<date>/window_check.json`; run it before `forecast` and the note
   shows the result.
+- `python -m gold_desk iv-check` scores GVZ implied volatility against the
+  stored GARCH forecasts (seconds; it rescales stored quantiles) and writes
+  `reports/<last live origin>/iv_check.json`.
 
 ## news.json
 
@@ -159,6 +162,35 @@ origin), and does not worsen the 1-week score.
 Neither qualifies: the differences are about a tenth of a percent. The model
 stays on the full sample. Each weekly note shows what both windows would say
 for the week ahead (`summary.json` `rolling`), so the comparison stays visible.
+
+## Implied volatility (GVZ)
+
+The GVZ is the CBOE's 30-day implied volatility of gold (GLD options), daily
+since June 2008. On 17 Nov 2026 two ways of using it were tested on the 905
+stored weekly forecasts from July 2009, after one year of history for the bias
+correction. Both rescale the GARCH forecast so that its expected 1-month vol
+hits a target; the shape (fat tails, volatility dynamics) stays GARCH. The rule
+was committed before the run (`7728ef6`): same shape as the window rule, p <
+0.025 for two candidates.
+
+- The GVZ close of the day before the origin is used, because the GVZ closes
+  after the COMEX settlement.
+- Implied vol carries a risk premium. The bias correction is the median ratio
+  of realised 21-day vol to the GVZ before it, over completed periods only
+  (between 0.74 and 0.84).
+
+| Candidate | 1-month score | p | 1-week score | p | Inside 90%, 1 month |
+|---|---|---|---|---|---|
+| GVZ, bias-corrected | +0.20% | 0.61 | -0.34% | 0.21 | 85% |
+| Half GARCH, half GVZ | -0.16% | 0.41 | -0.42% | 0.001 | 88% |
+| GARCH alone (used) | | | | | 90% |
+
+Neither qualifies. The blend does improve the 1-week score significantly and
+in both halves, but not the 1-month score, which is the horizon the rule is
+about. Both candidates make the ranges too narrow: the median-based correction
+takes off more premium than the data support. Changing the correction now,
+after seeing the result, would be fitting to this sample, so the 1-week gain
+stays a lead for a test on new live data rather than a reason to switch.
 
 Backfilled forecasts use only data up to their own date, but today's data
 vintage. Live forecasts record what was known on the day; they are the clean
