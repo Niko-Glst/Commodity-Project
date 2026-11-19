@@ -1,0 +1,497 @@
+{
+ "last_close": "2026-11-18",
+ "performance": [
+  {
+   "ticker": "BIL",
+   "name": "Cash: 1-3 month T-bills",
+   "group": "Cash and bonds",
+   "since_peak": 0.004576992,
+   "november": 0.0018382273,
+   "last_week": 0.000655711,
+   "year_to_peak": 0.0366360794,
+   "since_peak_vs_cash": 0.0,
+   "november_vs_cash": 0.0,
+   "last_week_vs_cash": 0.0
+  },
+  {
+   "ticker": "BTC-USD",
+   "name": "Bitcoin",
+   "group": "Abroad and crypto",
+   "since_peak": -0.2638024765,
+   "november": -0.1840838685,
+   "last_week": -0.148411843,
+   "year_to_peak": -0.3141817513,
+   "since_peak_vs_cash": -0.2683794685,
+   "november_vs_cash": -0.1859220958,
+   "last_week_vs_cash": -0.149067554
+  },
+  {
+   "ticker": "COPX",
+   "name": "Copper miners",
+   "group": "Metals and oil",
+   "since_peak": -0.2907974097,
+   "november": -0.1496664896,
+   "last_week": -0.1665758628,
+   "year_to_peak": 0.4367298299,
+   "since_peak_vs_cash": -0.2953744016,
+   "november_vs_cash": -0.151504717,
+   "last_week_vs_cash": -0.1672315738
+  },
+  {
+   "ticker": "CPER",
+   "name": "Copper",
+   "group": "Metals and oil",
+   "since_peak": -0.148138908,
+   "november": -0.1254168503,
+   "last_week": -0.096209942,
+   "year_to_peak": 0.2858978432,
+   "since_peak_vs_cash": -0.1527158999,
+   "november_vs_cash": -0.1272550776,
+   "last_week_vs_cash": -0.096865653
+  },
+  {
+   "ticker": "EEM",
+   "name": "Emerging markets",
+   "group": "Abroad and crypto",
+   "since_peak": -0.1521897771,
+   "november": -0.0517693283,
+   "last_week": -0.0670535104,
+   "year_to_peak": 0.2776598552,
+   "since_peak_vs_cash": -0.1567667691,
+   "november_vs_cash": -0.0536075556,
+   "last_week_vs_cash": -0.0677092214
+  },
+  {
+   "ticker": "EFA",
+   "name": "Developed markets ex US",
+   "group": "Abroad and crypto",
+   "since_peak": -0.0379965365,
+   "november": -0.0300861036,
+   "last_week": -0.0420409074,
+   "year_to_peak": 0.131034903,
+   "since_peak_vs_cash": -0.0425735285,
+   "november_vs_cash": -0.0319243309,
+   "last_week_vs_cash": -0.0426966185
+  },
+  {
+   "ticker": "GLD",
+   "name": "Gold",
+   "group": "Metals and oil",
+   "since_peak": -0.1074632792,
+   "november": -0.0410084782,
+   "last_week": -0.0656680727,
+   "year_to_peak": 0.0490970522,
+   "since_peak_vs_cash": -0.1120402712,
+   "november_vs_cash": -0.0428467056,
+   "last_week_vs_cash": -0.0663237837
+  },
+  {
+   "ticker": "IEF",
+   "name": "Treasuries 7-10 years",
+   "group": "Cash and bonds",
+   "since_peak": 0.0207377024,
+   "november": -0.0085184021,
+   "last_week": -0.0029690374,
+   "year_to_peak": -0.0356367521,
+   "since_peak_vs_cash": 0.0161607105,
+   "november_vs_cash": -0.0103566294,
+   "last_week_vs_cash": -0.0036247485
+  },
+  {
+   "ticker": "IGV",
+   "name": "Software",
+   "group": "Sectors",
+   "since_peak": -0.1279237203,
+   "november": -0.0704765405,
+   "last_week": -0.0517460701,
+   "year_to_peak": -0.0383943615,
+   "since_peak_vs_cash": -0.1325007123,
+   "november_vs_cash": -0.0723147678,
+   "last_week_vs_cash": -0.0524017811
+  },
+  {
+   "ticker": "IWM",
+   "name": "Russell 2000 small caps",
+   "group": "US stocks",
+   "since_peak": -0.0398805764,
+   "november": -0.0329717248,
+   "last_week": -0.0458158232,
+   "year_to_peak": 0.1514866582,
+   "since_peak_vs_cash": -0.0444575684,
+   "november_vs_cash": -0.0348099521,
+   "last_week_vs_cash": -0.0464715342
+  },
+  {
+   "ticker": "QQQ",
+   "name": "Nasdaq-100",
+   "group": "US stocks",
+   "since_peak": -0.1318352512,
+   "november": -0.0448666612,
+   "last_week": -0.0447144977,
+   "year_to_peak": 0.2559102489,
+   "since_peak_vs_cash": -0.1364122431,
+   "november_vs_cash": -0.0467048885,
+   "last_week_vs_cash": -0.0453702087
+  },
+  {
+   "ticker": "RSP",
+   "name": "S&P 500 equal weight",
+   "group": "US stocks",
+   "since_peak": 0.014599872,
+   "november": -0.0131922721,
+   "last_week": -0.0324275833,
+   "year_to_peak": 0.1283226416,
+   "since_peak_vs_cash": 0.01002288,
+   "november_vs_cash": -0.0150304994,
+   "last_week_vs_cash": -0.0330832943
+  },
+  {
+   "ticker": "SLV",
+   "name": "Silver",
+   "group": "Metals and oil",
+   "since_peak": -0.2660054066,
+   "november": -0.0874438979,
+   "last_week": -0.1275455642,
+   "year_to_peak": 0.2585110993,
+   "since_peak_vs_cash": -0.2705823986,
+   "november_vs_cash": -0.0892821252,
+   "last_week_vs_cash": -0.1282012752
+  },
+  {
+   "ticker": "SMH",
+   "name": "Semiconductors",
+   "group": "Sectors",
+   "since_peak": -0.2734545319,
+   "november": -0.120480742,
+   "last_week": -0.0935379196,
+   "year_to_peak": 0.8477141739,
+   "since_peak_vs_cash": -0.2780315239,
+   "november_vs_cash": -0.1223189693,
+   "last_week_vs_cash": -0.0941936306
+  },
+  {
+   "ticker": "SPY",
+   "name": "S&P 500",
+   "group": "US stocks",
+   "since_peak": -0.0627527153,
+   "november": -0.0337690672,
+   "last_week": -0.0389702497,
+   "year_to_peak": 0.1725485571,
+   "since_peak_vs_cash": -0.0673297073,
+   "november_vs_cash": -0.0356072945,
+   "last_week_vs_cash": -0.0396259608
+  },
+  {
+   "ticker": "TLT",
+   "name": "Treasuries 20+ years",
+   "group": "Cash and bonds",
+   "since_peak": 0.0424123986,
+   "november": -0.0156692012,
+   "last_week": -0.0086504815,
+   "year_to_peak": -0.0880263983,
+   "since_peak_vs_cash": 0.0378354066,
+   "november_vs_cash": -0.0175074285,
+   "last_week_vs_cash": -0.0093061925
+  },
+  {
+   "ticker": "USO",
+   "name": "Oil",
+   "group": "Metals and oil",
+   "since_peak": -0.0607273675,
+   "november": -0.1938044238,
+   "last_week": -0.0378878954,
+   "year_to_peak": 0.9886098285,
+   "since_peak_vs_cash": -0.0653043595,
+   "november_vs_cash": -0.1956426511,
+   "last_week_vs_cash": -0.0385436064
+  },
+  {
+   "ticker": "UUP",
+   "name": "US dollar (long vs basket)",
+   "group": "Dollar",
+   "since_peak": 0.0249135374,
+   "november": 0.0213793393,
+   "last_week": 0.009199334,
+   "year_to_peak": 0.0820784067,
+   "since_peak_vs_cash": 0.0203365454,
+   "november_vs_cash": 0.019541112,
+   "last_week_vs_cash": 0.008543623
+  },
+  {
+   "ticker": "XLB",
+   "name": "Materials",
+   "group": "Sectors",
+   "since_peak": 0.014679259,
+   "november": -0.0432309921,
+   "last_week": -0.048283692,
+   "year_to_peak": 0.1278384734,
+   "since_peak_vs_cash": 0.010102267,
+   "november_vs_cash": -0.0450692194,
+   "last_week_vs_cash": -0.048939403
+  },
+  {
+   "ticker": "XLC",
+   "name": "Communication services",
+   "group": "Sectors",
+   "since_peak": -0.0543663199,
+   "november": 0.056856859,
+   "last_week": -0.0278084409,
+   "year_to_peak": -0.0298470328,
+   "since_peak_vs_cash": -0.0589433118,
+   "november_vs_cash": 0.0550186317,
+   "last_week_vs_cash": -0.028464152
+  },
+  {
+   "ticker": "XLE",
+   "name": "Energy",
+   "group": "Sectors",
+   "since_peak": -0.0385882209,
+   "november": -0.1246786082,
+   "last_week": -0.0328230717,
+   "year_to_peak": 0.4676582507,
+   "since_peak_vs_cash": -0.0431652129,
+   "november_vs_cash": -0.1265168355,
+   "last_week_vs_cash": -0.0334787827
+  },
+  {
+   "ticker": "XLF",
+   "name": "Financials",
+   "group": "Sectors",
+   "since_peak": 0.044621365,
+   "november": -0.0015926412,
+   "last_week": -0.0376940621,
+   "year_to_peak": 0.0216327814,
+   "since_peak_vs_cash": 0.040044373,
+   "november_vs_cash": -0.0034308685,
+   "last_week_vs_cash": -0.0383497731
+  },
+  {
+   "ticker": "XLI",
+   "name": "Industrials",
+   "group": "Sectors",
+   "since_peak": -0.0403310298,
+   "november": -0.0163679231,
+   "last_week": -0.0369070452,
+   "year_to_peak": 0.1186835535,
+   "since_peak_vs_cash": -0.0449080218,
+   "november_vs_cash": -0.0182061505,
+   "last_week_vs_cash": -0.0375627562
+  },
+  {
+   "ticker": "XLK",
+   "name": "Technology",
+   "group": "Sectors",
+   "since_peak": -0.189059418,
+   "november": -0.0874602943,
+   "last_week": -0.0605070143,
+   "year_to_peak": 0.4119341501,
+   "since_peak_vs_cash": -0.19363641,
+   "november_vs_cash": -0.0892985216,
+   "last_week_vs_cash": -0.0611627253
+  },
+  {
+   "ticker": "XLP",
+   "name": "Consumer staples",
+   "group": "Sectors",
+   "since_peak": 0.1146698888,
+   "november": 0.019682422,
+   "last_week": -0.0029523964,
+   "year_to_peak": 0.0850099847,
+   "since_peak_vs_cash": 0.1100928968,
+   "november_vs_cash": 0.0178441947,
+   "last_week_vs_cash": -0.0036081074
+  },
+  {
+   "ticker": "XLRE",
+   "name": "Real estate",
+   "group": "Sectors",
+   "since_peak": 0.061313882,
+   "november": 0.0104239236,
+   "last_week": -0.0217537837,
+   "year_to_peak": 0.0213669445,
+   "since_peak_vs_cash": 0.0567368901,
+   "november_vs_cash": 0.0085856963,
+   "last_week_vs_cash": -0.0224094948
+  },
+  {
+   "ticker": "XLU",
+   "name": "Utilities",
+   "group": "Sectors",
+   "since_peak": 0.058066069,
+   "november": 0.0027630424,
+   "last_week": -0.0061615805,
+   "year_to_peak": -0.0568354308,
+   "since_peak_vs_cash": 0.053489077,
+   "november_vs_cash": 0.0009248151,
+   "last_week_vs_cash": -0.0068172916
+  },
+  {
+   "ticker": "XLV",
+   "name": "Health care",
+   "group": "Sectors",
+   "since_peak": 0.0842659773,
+   "november": -0.020014048,
+   "last_week": -0.0411749082,
+   "year_to_peak": 0.1787547477,
+   "since_peak_vs_cash": 0.0796889853,
+   "november_vs_cash": -0.0218522753,
+   "last_week_vs_cash": -0.0418306192
+  },
+  {
+   "ticker": "XLY",
+   "name": "Consumer discretionary",
+   "group": "Sectors",
+   "since_peak": 0.0669530581,
+   "november": 0.0331079891,
+   "last_week": -0.014794619,
+   "year_to_peak": -0.0609643617,
+   "since_peak_vs_cash": 0.0623760661,
+   "november_vs_cash": 0.0312697618,
+   "last_week_vs_cash": -0.01545033
+  }
+ ],
+ "profit_taking": {
+  "spearman": -0.4991789819376027,
+  "p": 0.006846381633855575,
+  "n": 28,
+  "slope": -0.16032773557741373,
+  "intercept": -0.03416240480999034,
+  "top5": [
+   "USO",
+   "SMH",
+   "XLE",
+   "COPX",
+   "XLK"
+  ],
+  "top5_since_peak": -0.17052538962458147,
+  "rest_since_peak": -0.03849795598202534
+ },
+ "beat_cash": {
+  "since_peak": [
+   11,
+   28
+  ],
+  "november": [
+   6,
+   28
+  ],
+  "last_week": [
+   1,
+   28
+  ]
+ },
+ "positioning": [
+  {
+   "series": "Gold",
+   "group": "Managed money",
+   "date": "2026-11-10T00:00:00.000",
+   "net": 112341.0,
+   "chg_1w": 8727.0,
+   "chg_4w": 5252.0,
+   "net_pct_oi": 0.2775736611,
+   "range_pct": 0.4228495074
+  },
+  {
+   "series": "Copper",
+   "group": "Managed money",
+   "date": "2026-11-10T00:00:00.000",
+   "net": 35064.0,
+   "chg_1w": 174.0,
+   "chg_4w": -25994.0,
+   "net_pct_oi": 0.111627907,
+   "range_pct": 0.6246896006
+  },
+  {
+   "series": "Nasdaq-100 (mini)",
+   "group": "Asset managers",
+   "date": "2026-11-10T00:00:00.000",
+   "net": 72785.0,
+   "chg_1w": -352.0,
+   "chg_4w": -2538.0,
+   "net_pct_oi": 0.2520980753,
+   "range_pct": 0.5916014945
+  },
+  {
+   "series": "S&P 500 (mini)",
+   "group": "Asset managers",
+   "date": "2026-11-10T00:00:00.000",
+   "net": 914130.0,
+   "chg_1w": -14454.0,
+   "chg_4w": -1705.0,
+   "net_pct_oi": 0.4530583782,
+   "range_pct": 0.3531759388
+  },
+  {
+   "series": "Nasdaq-100 (mini), leveraged",
+   "group": "Leveraged funds",
+   "date": "2026-11-10T00:00:00.000",
+   "net": 13967.0,
+   "chg_1w": 3894.0,
+   "chg_4w": 25560.0,
+   "net_pct_oi": 0.0483760915,
+   "range_pct": 0.9657873042
+  },
+  {
+   "series": "US dollar index",
+   "group": "Leveraged funds",
+   "date": "2026-11-10T00:00:00.000",
+   "net": 2850.0,
+   "chg_1w": -461.0,
+   "chg_4w": 774.0,
+   "net_pct_oi": 0.0554043546,
+   "range_pct": 0.5364144571
+  }
+ ],
+ "m2": 23413.9,
+ "m2_date": "2026-09-01",
+ "rrp": 0.331,
+ "rrp_date": "2026-11-18",
+ "external": {
+  "fms_cash": "3.6%",
+  "fms_cash_sub": "BofA survey, from 3.9% in Oct",
+  "mmf": "$7.98tn",
+  "mmf_sub": "11 Nov; record $8.02tn on 4 Nov",
+  "evidence": [
+   [
+    "Fund-manager cash (BofA survey, 6-12 Nov)",
+    "3.6% of assets, from 3.9% in October, lowest since August. Tech net overweight 12% from 37%, the biggest monthly cut since 2006",
+    "Managers sold tech but did not raise cash"
+   ],
+   [
+    "Money market funds (ICI, week to 11 Nov)",
+    "$7.98 trillion, -$35.7bn on the week; record $8.02 trillion the week before (+$114.5bn, Crane Data)",
+    "Near a record, no new inflow in the latest week"
+   ],
+   [
+    "US ETF flows (ETF.com, week to 13 Nov)",
+    "+$61.4bn in total, +$54.2bn into equity ETFs; QQQ and VOO led, semiconductor funds lost assets",
+    "Buying the dip in broad funds, selling semis"
+   ],
+   [
+    "T-bill ETFs (weekly flow reports, week to 6 Nov)",
+    "SGOV -$1.29bn, BIL -$0.27bn",
+    "No rush into cash ETFs"
+   ],
+   [
+    "Gold ETFs",
+    "GLD -$1.37bn over 30 days (Invezz, 19 Nov); +$423m in one week (ETF Action)",
+    "Mixed; providers disagree"
+   ],
+   [
+    "Speculators in gold (CFTC, 10 Nov)",
+    "Managed money net long 112,341 contracts, +8,727 on the week",
+    "Still adding before this week's drop"
+   ],
+   [
+    "Speculators in copper (CFTC, 10 Nov)",
+    "Net long 35,064; -25,994 over four weeks",
+    "Cutting copper"
+   ],
+   [
+    "Hedge funds in Nasdaq-100 futures (CFTC, 10 Nov)",
+    "Leveraged funds net long 13,967; +25,560 over four weeks, 97% of the range since 2024",
+    "Bought the dip"
+   ]
+  ]
+ }
+}
