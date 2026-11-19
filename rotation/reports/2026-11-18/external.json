@@ -1,13 +1,7 @@
 {
  "fms_cash": "3.6%",
- "fms_cash_sub": "BofA survey, from 3.9% in Oct",
- "mmf": "$7.98tn",
- "mmf_sub": "11 Nov; record $8.02tn on 4 Nov",
  "evidence": [
-  ["Fund-manager cash (BofA survey, 6-12 Nov)", "3.6% of assets, from 3.9% in October, lowest since August. Tech net overweight 12% from 37%, the biggest monthly cut since 2006", "Managers sold tech but did not raise cash"],
-  ["Money market funds (ICI, week to 11 Nov)", "$7.98 trillion, -$35.7bn on the week; record $8.02 trillion the week before (+$114.5bn, Crane Data)", "Near a record, no new inflow in the latest week"],
-  ["US ETF flows (ETF.com, week to 13 Nov)", "+$61.4bn in total, +$54.2bn into equity ETFs; QQQ and VOO led, semiconductor funds lost assets", "Buying the dip in broad funds, selling semis"],
-  ["T-bill ETFs (weekly flow reports, week to 6 Nov)", "SGOV -$1.29bn, BIL -$0.27bn", "No rush into cash ETFs"],
-  ["Gold ETFs", "GLD -$1.37bn over 30 days (Invezz, 19 Nov); +$423m in one week (ETF Action)", "Mixed; providers disagree"]
+  ["All US ETFs (ETF.com, week to 13 Nov)", "+$61.4bn, of which +$54.2bn into equity ETFs; QQQ and VOO led, semiconductor funds lost assets", "Press figure for all issuers; consistent with the SPDR data"],
+  ["Gold ETFs (press)", "GLD -$1.37bn over 30 days (Invezz, 19 Nov) but +$423m in one week (ETF Action)", "Providers disagree; not computed here"]
  ]
 }

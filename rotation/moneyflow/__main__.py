@@ -1,6 +1,6 @@
 """Command line (run from rotation/):
 
-    python -m moneyflow check      # fresh data, print where money is moving (no files written except data/)
+    python -m moneyflow check      # fresh data; prints flows, stress, rates and prices (writes data/ only)
     python -m moneyflow report     # results.json + PDF in reports/<last close>/ (needs external.json there)
 """
 
@@ -18,75 +18,83 @@ from . import data
 REPORTS = Path(__file__).resolve().parents[1] / "reports"
 
 
-def collect(p: pd.DataFrame, c: pd.DataFrame, fred: dict) -> dict:
-    perf = A.performance(p)
-    pos = A.positioning(c)
+def _records(frame: pd.DataFrame) -> list:
+    return json.loads(frame.to_json(orient="records", date_format="iso"))
+
+
+def _clean(d: dict) -> dict:
+    return json.loads(pd.Series(d).to_json(date_format="iso", default_handler=str))
+
+
+def collect(b) -> dict:
+    perf = A.performance(b.prices)
     return {
-        "last_close": str(p.index[-1].date()),
+        "last_close": str(b.prices.index[-1].date()),
         "performance": json.loads(perf.reset_index(names="ticker").to_json(orient="records")),
         "profit_taking": A.profit_taking(perf),
+        "robustness": _records(A.robustness(b.prices)),
+        "groups_by_start": _records(A.groups_by_start(b.prices)),
         "beat_cash": {k: A.beat_cash(perf, k) for k in ("since_peak", "november", "last_week")},
-        "positioning": json.loads(pos.to_json(orient="records", date_format="iso")),
-        "m2": float(fred["M2SL"].iloc[-1]), "m2_date": str(fred["M2SL"].index[-1].date()),
-        "rrp": float(fred["RRPONTSYD"].iloc[-1]), "rrp_date": str(fred["RRPONTSYD"].index[-1].date()),
+        "positioning": _records(A.positioning(b.cot)),
+        "credit_and_rates": _records(A.credit_and_rates(b.fred_series)),
+        "stress": _clean(A.stress(b.market, b.prices)),
+        "factors": _clean(A.factors(b.market)),
+        "etf_flows": _records(A.etf_flows(b.flows)),
+        "mmf": _clean(A.mmf_stats(b.mmf)),
+        "net_liquidity": _clean(A.net_liquidity(b.fred_series)),
     }
 
 
-def cot_evidence(pos: pd.DataFrame) -> list[list[str]]:
-    d = pd.Timestamp(pos.date.iloc[0])
-    r = pos.set_index("series")
-    g, cu, nq = r.loc["Gold"], r.loc["Copper"], r.loc["Nasdaq-100 (mini), leveraged"]
-    return [
-        [f"Speculators in gold (CFTC, {d.day} {d:%b})", f"Managed money net long {g.net:,.0f} contracts, {g.chg_1w:+,.0f} on "
-         "the week", "Still adding before this week's drop" if g.chg_1w > 0 else "Cutting gold"],
-        [f"Speculators in copper (CFTC, {d.day} {d:%b})", f"Net long {cu.net:,.0f}; {cu.chg_4w:+,.0f} over four weeks",
-         "Cutting copper" if cu.chg_4w < 0 else "Adding copper"],
-        [f"Hedge funds in Nasdaq-100 futures (CFTC, {d.day} {d:%b})",
-         f"Leveraged funds net long {nq.net:,.0f}; {nq.chg_4w:+,.0f} over four weeks, {nq.range_pct:.0%} of the range since 2024",
-         "Bought the dip" if nq.chg_4w > 0 else "Sold"],
-    ]
-
-
 def cmd_check(args) -> None:
-    p, c, fred = data.load(refresh=not args.cached)
-    perf = A.performance(p)
-    pt = A.profit_taking(perf)
-    print(f"Prices to {p.index[-1]:%Y-%m-%d} close. Cash = {A.CASH} (1-3 month T-bills).\n")
-    for col, label in (("last_week", "Last 7 days"), ("november", "November"), ("since_peak", f"Since {A.PEAK}")):
-        n, tot = A.beat_cash(perf, col)
-        x = perf.sort_values(col)
-        print(f"{label}: {n} of {tot} assets beat cash ({perf.loc[A.CASH, col]:+.2%}).")
-        print("  weakest: " + ", ".join(f"{r['name']} {r[col]:+.1%}" for _, r in x.head(4).iterrows()))
-        print("  strongest: " + ", ".join(f"{r['name']} {r[col]:+.1%}" for _, r in x.tail(4).iloc[::-1].iterrows()))
-    print(f"\nProfit-taking test: rank correlation of 12-month gain to {A.PEAK} with the move since = "
-          f"{pt['spearman']:+.2f} (p = {pt['p']:.3f}); negative = winners sold hardest.")
-    print("\nFutures positioning (CFTC):")
-    with pd.option_context("display.width", 160, "display.float_format", "{:,.0f}".format):
-        print(A.positioning(c).drop(columns=["net_pct_oi"]).assign(range_pct=lambda d: (d.range_pct * 100).round())
-              .to_string(index=False))
-    print(f"\nFed reverse repo {fred['RRPONTSYD'].iloc[-1]:,.1f} $bn ({fred['RRPONTSYD'].index[-1]:%Y-%m-%d}); "
-          f"M2 {fred['M2SL'].iloc[-1]:,.0f} $bn ({fred['M2SL'].index[-1]:%Y-%m})")
-    print("\nNot automated (check by hand): ICI money funds (Thu 16:30 ET), ETF.com weekly flows, "
-          "BofA fund manager survey (mid-month).")
+    b = data.load(refresh=not args.cached)
+    R = collect(b)
+    pd.set_option("display.width", 200)
+    print(f"Data to {R['last_close']} (credit and rates may end a day earlier).\n")
+    print("1. Credit and rates (widening spreads = real risk-off)")
+    cr = pd.DataFrame(R["credit_and_rates"])
+    print(cr[["series", "date", "now", "chg_peak_bp", "chg_1w_bp", "z_1w", "pct_since_2024"]].round(2).to_string(index=False))
+    s = R["stress"]
+    print(f"\n2. Stress: VIX/VIX3M {s['ratio']:.3f} (inverted on {', '.join(s['inverted_days_recent']) or 'no day'} in Nov), "
+          f"MOVE {s['move']:.0f}, sector correlation {s['corr']:.2f} (at peak {s['corr_peak']:.2f}), "
+          f"dispersion at {s['disp_pct']:.0%} percentile")
+    f = R["factors"]
+    print(f"   Momentum ETF vs S&P 500 since {A.PEAK}: {f['mtum_vs_spy']:+.1%}; XLY {f['xly']:+.1%} vs equal weight {f['rspd']:+.1%}")
+    print("\n3. SPDR ETF flows from shares outstanding ($bn; z = last week vs past year)")
+    fl = pd.DataFrame(R["etf_flows"])
+    print(fl[["ticker", "name", "flow_peak_bn", "flow_nov_bn", "flow_week_bn", "z_week"]].round(2)
+          .sort_values("flow_peak_bn").to_string(index=False))
+    m = R["mmf"]
+    print(f"\n4. Money market funds (ICI): ${m['total_tn']:.2f}tn, {m['chg_bn']:+.1f}bn in the week to {m['date'][:10]} "
+          f"(z {m['z']:+.1f}); week before {m['prev_chg_bn']:+.1f}bn (z {m['prev_z']:+.1f})")
+    n = R["net_liquidity"]
+    print(f"   Net liquidity (Fed - TGA - RRP): ${n['now_bn']:,.0f}bn, 4-week change {n['chg_4w_bn']:+,.0f}bn")
+    print("\n5. Prices: assets above T-bills")
+    for col, label in (("last_week", "last 7 days"), ("november", "November"), ("since_peak", f"since {A.PEAK}")):
+        k, tot = R["beat_cash"][col]
+        print(f"   {label}: {k} of {tot}")
+    print(pd.DataFrame(R["groups_by_start"]).round(3).to_string(index=False))
+    print("\n6. Profit-taking or volatility (exploratory checks)")
+    print(pd.DataFrame(R["robustness"]).round(2).to_string(index=False))
+    print("\n7. Positioning (CFTC)")
+    print(pd.DataFrame(R["positioning"]).drop(columns=["net_pct_oi"]).round(2).to_string(index=False))
+    print("\nBy hand: BofA fund manager survey (mid-month), ETF.com weekly flows, EPFR via BofA Flow Show.")
 
 
 def cmd_report(args) -> None:
     from .report import build_pdf
 
-    p, c, fred = data.load()
-    out = collect(p, c, fred)
+    b = data.load()
+    out = collect(b)
     folder = REPORTS / out["last_close"]
-    ext = json.loads((folder / "external.json").read_text(encoding="utf-8"))
-    ext["evidence"] = ext["evidence"] + cot_evidence(pd.DataFrame(out["positioning"]))
-    out["external"] = ext
+    out["external"] = json.loads((folder / "external.json").read_text(encoding="utf-8"))
     (folder / "results.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
-    print(f"wrote {build_pdf(p, c, folder)}")
+    print(f"wrote {build_pdf(b, folder)}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="moneyflow")
     sub = parser.add_subparsers(dest="cmd", required=True)
-    s = sub.add_parser("check", help="print where money is moving")
+    s = sub.add_parser("check", help="print flows, stress, rates and prices")
     s.add_argument("--cached", action="store_true", help="use the saved snapshot instead of downloading")
     s.set_defaults(func=cmd_check)
     sub.add_parser("report", help="write results.json and the PDF").set_defaults(func=cmd_report)

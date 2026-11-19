@@ -1,72 +1,86 @@
-# Rotation and cash: where is the money going?
+# Rotation or de-risking: where is the money going?
 
 A side project next to the paper, the gold desk and the copper project. Question (19 Nov 2026):
 metals and tech are falling and the dollar is strong. Are investors taking profits and moving into
 cash, and how can you check where money moves?
 
-## The short answer (prices to the 18 Nov close)
+Note: [rotation_2026-11-18.pdf](reports/2026-11-18/rotation_2026-11-18.pdf) (4 pages); every number in
+[results.json](reports/2026-11-18/results.json). Revised the same day after a review; the first version
+led with price measures and claimed money moved into defensive sectors, which the flow data do not show.
 
-Note: [rotation_2026-11-18.pdf](reports/2026-11-18/rotation_2026-11-18.pdf); numbers in
-[results.json](reports/2026-11-18/results.json).
+## Findings (data to 18 Nov 2026)
 
-- **Profit-taking: yes.** Across 28 ETFs, the 12-month gain up to the Nasdaq's 6 Oct 2026 high and
-  the move since have a rank correlation of -0.50 (p = 0.007): last year's winners (oil,
-  semiconductors, energy, copper miners, tech) fell hardest, -17% on average against -4% for the rest.
-  The measure (12 months to the peak vs since the peak) was fixed in code before it was computed.
-- **Rotation, not a flight to cash (until 13 Nov).** Since 6 Oct, staples (+11%), health care (+8%),
-  utilities, real estate, long Treasuries and the dollar rose; the equal-weight S&P 500 (+1.5%) beat
-  the index (-6.3%). Fund managers cut tech by a record in BofA's November survey but also cut cash
-  (3.6% from 3.9%); ETF buyers put $54bn into equity funds in the week to 13 Nov; T-bill ETFs saw
-  outflows; money market funds slipped from their $8.02tn record.
-- **This week is different.** From 11 to 18 Nov, 27 of 28 assets lost to cash; only the dollar beat
-  it. That is the first broad de-risking, and the flow data that would show money going into cash
-  (ICI money funds, CFTC positioning) are not out yet.
+**Prices rotated, ETF money did not, and stress rose this week.**
 
-## A seller always needs a buyer
-
-Trading does not change the amount of cash: the buyer pays what the seller receives. "Money moving
-into cash" can only be seen where money enters or leaves a pool: fund flows (ETFs and money market
-funds create or redeem shares), futures positioning, and surveys of how much cash managers hold.
-Prices show which assets lost to cash, not who sold.
+- **Prices:** since the 6 Oct high, AI stocks (-18%) and silver and copper (-23%) fell while defensive
+  sectors (+8%) and also financials, consumer discretionary and industrials (+2%) rose. The same holds
+  from 1 Oct, 15 Oct or 1 Nov. Consumer discretionary's gain is broad (equal weight +8.8% vs XLY +6.7%).
+- **ETF flows** (computed from State Street's daily shares outstanding, SPDR funds only): XLK +$2.5bn and
+  SPY +$16bn since 6 Oct, while utilities (-$1.3bn), financials (-$1.4bn) and staples lost money. Defensive
+  prices rose without ETF money. No fund's flow last week was unusual against its past year.
+- **Cash:** money market funds (ICI) had one unusual week (+$114bn to 4 Nov, z = 3.0) and gave back $36bn
+  the next (z = -0.9). The T-bill ETF BIL took in $1.7bn in November. BofA's November survey: managers
+  hold 3.6% cash, a sell signal by BofA's own rule.
+- **Stress:** the high-yield spread is up 40 bp since 6 Oct (3.43%, 91st percentile since 2024), the VIX
+  curve inverted on 17 and 18 Nov (7% of days since 2024), and the 10-year real yield rose 23 bp in a week
+  (z = 2.8). Bond volatility (MOVE) is calm; sector correlation is up (0.40 from 0.28) but far from panic
+  levels (0.88 in May 2025), and dispersion is high.
+- **Profit-taking:** the pre-registered cross-asset test gives -0.50 (p = 0.007), but post-hoc checks show
+  it is mostly volatility: controlling for each asset's volatility, momentum's t-value is about zero.
+  Within equity sectors something remains (t -1.2 to -3.9; about -2 beyond beta), and the momentum ETF
+  trails the S&P 500 by 13 points: among stocks, last year's winners are being sold.
 
 ## How to check it yourself
 
-| What | Where | When | How to read it |
-|---|---|---|---|
-| Which assets lose to cash | `python -m moneyflow check` (this project), or any chart against BIL / SGOV | Daily | Most assets below cash = de-risking; a split = rotation |
-| Money market fund assets | [ICI](https://www.ici.org/research/stats/mmf) | Thursday 16:30 ET | A fast jump in a sell-off = flight to cash; a slow rise = chasing the yield |
-| ETF flows | [ETF.com weekly flows](https://www.etf.com/sections/weekly-etf-flows), ICI combined flows | Weekly | Creations and redemptions are real money in and out |
-| Fund-manager cash | BofA Global Fund Manager Survey (via press) | Mid-month | Above 5% = fear (contrarian buy); 4% or less = complacency |
-| Futures positioning | [CFTC Commitments of Traders](https://publicreporting.cftc.gov) | Friday 15:30 ET (Tuesday data) | Speculators cutting net longs = money leaving |
-| Gold ETF holdings | spdrgoldshares.com, World Gold Council | Daily, monthly | Tonnes falling = metal leaving ETFs |
-| Breadth | RSP vs SPY | Daily | Equal weight ahead = leaders sold, the rest held |
-| Liquidity backdrop | FRED: M2SL, RRPONTSYD | Monthly, daily | Slow; says little about one week |
+`python -m moneyflow check` prints all automated measures below in one go.
 
-The page `assetmarketcap.com/asset/CASH-USD` showed no data on 19 Nov (placeholder fields); its method
-note says currencies use M2, which is bank deposits and savings, not investors switching to cash.
+| Question | Measure | Source | When |
+|---|---|---|---|
+| Real risk-off or reshuffle? | High-yield and IG credit spreads | FRED `BAMLH0A0HYM2`, `BAMLC0A0CM` | Daily |
+| Stress in stocks? | VIX / VIX3M (above 1 = inverted), MOVE for bonds | Yahoo `^VIX`, `^VIX3M`, `^MOVE` | Daily |
+| Rotation or panic? | Average sector correlation and dispersion, 21 days | computed from sector ETFs | Daily |
+| Winners sold? | Momentum ETF vs S&P 500 and min-vol (MTUM, SPY, USMV) | Yahoo | Daily |
+| Where did ETF money go? | Change in shares outstanding x NAV | State Street SPDR NAV-history files | Daily |
+| Into cash? | Money market fund assets, weekly change and z-score | [ICI](https://www.ici.org/research/stats/mmf) weekly file | Thursday 16:30 ET |
+| How much cash do managers hold? | BofA Global Fund Manager Survey | press, by hand | Mid-month |
+| Who holds futures? | CFTC Commitments of Traders | publicreporting.cftc.gov | Friday 15:30 ET |
+| Rates driver? | 2y, 10y, real yield, breakeven | FRED `DGS2`, `DGS10`, `DFII10`, `T10YIE` | Daily |
+| Liquidity backdrop | Fed assets - TGA - reverse repo | FRED `WALCL`, `WTREGEN`, `RRPONTSYD` | Weekly |
+
+Net liquidity uses Fed total assets, not bank reserves: reserves are already net of the Treasury account
+and reverse repo, so `WRESBAL - TGA - RRP` would count those twice.
+
+A seller always needs a buyer: trading does not change the amount of cash. "Money moving into cash" is
+visible only in fund flows, positioning and surveys; prices show which assets did worse than T-bills.
+
+## Not covered yet
+
+EPFR flows (BofA Flow Show: no November issue found), prime-brokerage and retail positioning, sector
+earnings revisions (FactSet), the share of S&P 500 stocks above their 50-day average, Cboe implied
+correlation (no history on Yahoo), and flows for iShares, Vanguard and Invesco funds. ICI's file starts in
+July 2026, so the money-fund z-scores rest on 18 weekly changes.
 
 ## Running
 
 ```bash
 cd rotation
 python -m pip install -r requirements.txt
-python -m moneyflow check            # fresh prices, CFTC and FRED; prints the dashboard
+python -m moneyflow check            # fresh data and the dashboard
 python -m moneyflow report           # results.json + PDF; needs reports/<last close>/external.json
 python -m pytest -q
 ```
 
-`external.json` holds the numbers that cannot be fetched automatically (BofA survey, ICI, ETF flows),
-with their source and date, written by hand like the desk's `news.json`.
+`external.json` holds what cannot be fetched (BofA survey, press flow figures), with source and date.
 
 ## Layout
 
 ```
 rotation/
   moneyflow/
-    data.py       Yahoo total returns (29 ETFs), CFTC positioning, FRED cash series
-    analysis.py   returns vs cash, the profit-taking test, positioning changes
+    data.py       Yahoo total returns and stress gauges, CFTC, FRED, State Street flows, ICI money funds
+    analysis.py   returns vs T-bills, profit-taking test and robustness, flows, stress, rates
     report.py     the PDF
-  data/           snapshot used (prices.csv, cot.csv, fred.csv)
+  data/           snapshot used (prices, market, cot, fred, flows, mmf)
   reports/<last close>/
   tests/
 ```

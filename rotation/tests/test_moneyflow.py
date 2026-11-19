@@ -29,3 +29,35 @@ def test_profit_taking_is_negative_when_winners_fall_hardest():
     pt = profit_taking(perf)
     assert pt["spearman"] == pytest.approx(-1.0)
     assert beat_cash(perf) == (2, 5)                  # only the two that rose after the peak beat cash
+
+
+def test_etf_flow_is_change_in_shares_times_nav():
+    from moneyflow.analysis import etf_flows
+
+    dates = pd.bdate_range("2025-09-01", "2026-11-18")
+    shares = np.full(len(dates), 1_000_000.0)
+    shares[dates > pd.Timestamp("2026-11-12")] += 50_000          # one creation of 50,000 shares on 13 Nov
+    f = pd.DataFrame({"date": dates, "nav": 20.0, "shares": shares, "ticker": "XLP"})
+    row = etf_flows(f).iloc[0]
+    assert row.flow_week_bn == pytest.approx(50_000 * 20.0 / 1e9)
+    assert row.flow_peak_bn == pytest.approx(row.flow_week_bn)
+    assert row.flow_peak_pct == pytest.approx(0.05)
+
+
+def test_mmf_z_uses_only_earlier_weeks():
+    from moneyflow.analysis import mmf_stats
+
+    idx = pd.date_range("2026-07-01", periods=12, freq="W-WED")
+    total = 7_000_000 + np.cumsum([0] + [10_000, -10_000] * 5 + [50_000])
+    m = mmf_stats(pd.DataFrame({"total": total}, index=idx))
+    assert m["chg_bn"] == pytest.approx(50.0)
+    assert m["n_weeks"] == 10 and m["z"] > 4
+
+
+def test_net_liquidity_does_not_double_count_reserves():
+    from moneyflow.analysis import net_liquidity
+
+    idx = pd.date_range("2026-09-02", periods=12, freq="W-WED")
+    F = {"WALCL": pd.Series(6_700_000.0, idx), "WTREGEN": pd.Series(900_000.0, idx),
+         "RRPONTSYD": pd.Series(1.0, pd.bdate_range("2026-09-01", "2026-11-20"))}
+    assert net_liquidity(F)["now_bn"] == pytest.approx(6_700 - 900 - 1)
