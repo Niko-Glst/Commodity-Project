@@ -155,6 +155,91 @@ def qualifies(res: dict, p_max: float = P_MAX) -> bool:
     return bool(res["r2_os"] > 0 and res["cw_p"] < p_max and res["r2_early"] > 0 and res["r2_late"] > 0)
 
 
+def secondary(df: pd.DataFrame) -> pd.DataFrame:
+    """Reported next to the rule, not part of it: other targets, a longer horizon, the reverse direction."""
+    specs = [  # (label, target, source, horizon, signal)
+        ("Copper 13w -> Nasdaq-100, 4w", "^NDX", COPPER, 4, "copper_13"),
+        ("Copper 13w -> SOX, 4w", "^SOX", COPPER, 4, "copper_13"),
+        ("Copper 4w -> SOX, 4w", "^SOX", COPPER, 4, "copper_4"),
+        ("Copper 13w -> Nasdaq Composite, 13w", "^IXIC", COPPER, 13, "copper_13"),
+        ("Reverse: Nasdaq 4w -> copper, 4w", COPPER, "^IXIC", 4, "copper_4"),
+        ("Reverse: Nasdaq 13w -> copper, 4w", COPPER, "^IXIC", 4, "copper_13"),
+        ("Reverse: SOX 13w -> copper, 4w", COPPER, "^SOX", 4, "copper_13"),
+    ]
+    rows = []
+    for label, target, source, h, sig in specs:
+        res = evaluate(oos(panel(df, target=target, h=h, source=source), sig, h=h), h=h)
+        rows.append({"test": label, **res})
+    return pd.DataFrame(rows)
+
+
+def regimes(df: pd.DataFrame, target: str = TARGET, h: int = HORIZON) -> pd.DataFrame:
+    """In-sample: the target's next-h-week return after copper rose vs fell over 13 weeks (HAC t of the gap)."""
+    p = panel(df, target=target, h=h).dropna(subset=["target_fwd", "copper_13"])
+    down = (p.copper_13 < 0).astype(float).values
+    y = p.target_fwd.values
+    X = np.column_stack([np.ones_like(down), down])
+    beta, *_ = np.linalg.lstsq(X, y, rcond=None)
+    e = y - X @ beta
+    xtx_inv = np.linalg.inv(X.T @ X)
+    u = X * e[:, None]
+    s = u.T @ u
+    for k in range(1, h):
+        g = u[k:].T @ u[:-k]
+        s += (1 - k / h) * (g + g.T)
+    se = np.sqrt(np.diag(xtx_inv @ s @ xtx_inv))
+    up_r, dn_r = y[down == 0], y[down == 1]
+    return pd.DataFrame([
+        {"copper_13w": "rose", "n": len(up_r), "mean": up_r.mean(), "share_up": (up_r > 0).mean()},
+        {"copper_13w": "fell", "n": len(dn_r), "mean": dn_r.mean(), "share_up": (dn_r > 0).mean()},
+    ]).assign(gap=beta[1], gap_t=beta[1] / se[1], gap_p=2 * stats.norm.sf(abs(beta[1] / se[1])))
+
+
+def bear_markets(s: pd.Series, depth: float = 0.20) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
+    """(peak, trough) pairs by the 20/20 rule: a bear market starts once the price is `depth` below its
+    running high and ends once it is `depth` above its running low. The last one may still be open."""
+    vals, idx = s.values, s.index
+    out, bull, ext = [], True, 0
+    for i in range(1, len(vals)):
+        if bull:
+            if vals[i] > vals[ext]:
+                ext = i
+            elif vals[i] <= vals[ext] * (1 - depth):
+                peak, bull, ext = ext, False, i
+        else:
+            if vals[i] < vals[ext]:
+                ext = i
+            elif vals[i] >= vals[ext] * (1 + depth):
+                out.append((idx[peak], idx[ext]))
+                bull, ext = True, i
+    if not bull:
+        out.append((idx[peak], idx[ext]))
+    return out
+
+
+def copper_off_high(df: pd.DataFrame, days: int = 126) -> pd.Series:
+    """Copper's distance below its own high of the past six months (126 trading days), every day."""
+    cu = df[COPPER].dropna()
+    return cu / cu.rolling(days, min_periods=days).max() - 1
+
+
+def bear_peaks(df: pd.DataFrame, index: str = TARGET, depth: float = 0.20) -> pd.DataFrame:
+    """Each bear-market peak of `index` since copper data start, and where copper stood at that peak."""
+    s, cu = df[index].dropna(), df[COPPER].dropna()
+    off = copper_off_high(df)
+    rows = []
+    for peak, trough in bear_markets(s, depth):
+        if peak < off.first_valid_index():
+            continue
+        window = cu.loc[peak - pd.Timedelta(days=183):peak]
+        cu_high = window.idxmax()
+        rows.append({"index_peak": peak, "index_trough": trough, "index_fall": s[trough] / s[peak] - 1,
+                     "copper_6m_high": cu_high, "weeks_before": (peak - cu_high).days / 7,
+                     "copper_off_high_at_peak": float(off.loc[:peak].iloc[-1]),
+                     "copper_peak_to_trough": cu.loc[:trough].iloc[-1] / cu.loc[:peak].iloc[-1] - 1})
+    return pd.DataFrame(rows)
+
+
 def preregistered(df: pd.DataFrame) -> pd.DataFrame:
     """The three pre-registered candidates against the Nasdaq Composite, 4 weeks ahead."""
     p = panel(df)

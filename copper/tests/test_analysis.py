@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from dr_copper.analysis import evaluate, fisher_ci, oos, panel, qualifies, weekly_closes
+from dr_copper.analysis import bear_markets, evaluate, fisher_ci, oos, panel, qualifies, weekly_closes
 from dr_copper.data import drop_unfinished_day
 
 
@@ -60,6 +60,14 @@ def test_oos_finds_a_real_predictor_and_rejects_noise():
     assert res["r2_os"] > 0.05 and res["cw_p"] < 0.001 and qualifies(res)
     p["target_fwd"] = rng.normal(0, 1, n)
     assert not qualifies(evaluate(oos(p, "sig")))
+
+
+def test_bear_markets_follow_the_20_20_rule():
+    idx = pd.bdate_range("2010-01-01", periods=9)
+    s = pd.Series([100, 110, 95, 85, 90, 105, 120, 100, 92], index=idx)
+    # high 110 -> falls 22.7% to 85 (bear) -> rises 23.5% to 105 (bear over) -> high 120 -> 92 (open bear, -23%)
+    assert bear_markets(s) == [(idx[1], idx[3]), (idx[6], idx[8])]
+    assert bear_markets(pd.Series([100, 95, 90, 99], index=idx[:4])) == []
 
 
 def test_fisher_interval_brackets_the_estimate():

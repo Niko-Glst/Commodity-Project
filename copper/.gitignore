@@ -1,0 +1,3 @@
+reports/*/_charts/
+__pycache__/
+.pytest_cache/

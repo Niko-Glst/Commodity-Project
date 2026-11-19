@@ -48,14 +48,43 @@ and the reverse direction (does the Nasdaq lead copper?).
 Before fixing the rule, only descriptive numbers were looked at (price levels, peaks and November
 changes); no forecasting result had been computed.
 
+## Result (19 Nov 2026, data to the 18 Nov close)
+
+Note: [dr_copper_2026-11-18.pdf](reports/2026-11-18/dr_copper_2026-11-18.pdf); numbers in
+[results.json](reports/2026-11-18/results.json).
+
+**Copper is not a leading indicator for the Nasdaq.** None of the three candidates passes; all three
+forecast worse than the plain historical average.
+
+| Candidate signal | Forecasts | R² vs average | Clark-West p | R², 1st half | R², 2nd half |
+|---|---|---|---|---|---|
+| Copper, past 4 weeks | 1,098 | -0.82% | 0.58 | -0.57% | -1.07% |
+| Copper, past 13 weeks | 1,089 | -0.46% | 0.25 | +0.10% | -1.01% |
+| Copper/gold ratio, past 13 weeks | 1,089 | -0.38% | 0.28 | +0.55% | -1.30% |
+
+The side checks agree: no copper signal helps for the Nasdaq-100 or SOX or at 13 weeks, the reverse
+direction (Nasdaq or SOX leading copper) does not pass either, and the Nasdaq's next four weeks after a
+13-week copper fall are no different from those after a rise (p = 0.63).
+
+**They do move together.** The weekly correlation with the Nasdaq Composite is 0.59 over the past 52
+weeks, the highest since March 2021 (peak 0.71 in 2012). By era: 0.22 (2000-07), 0.53 (2008-09),
+0.41 (2010-19), 0.39 (2020-22), 0.35 (2023-26). The AI era is not more linked than 2010-19 (p = 0.35).
+
+**Dr. Copper and yields.** The copper/gold ratio tracks the 10-year yield in 13-week changes (0.50 since
+2000, 0.37 since 2023), but since 2023 the levels have split (-0.28) because of gold's rally.
+
 ## Layout
 
 ```
 copper/
   dr_copper/
     data.py       daily closes from Yahoo Finance, snapshot in data/prices.csv
-    analysis.py   weekly returns, correlations by era, the out-of-sample test
+    analysis.py   weekly returns, correlations by era, the out-of-sample test, bear markets
+    report.py     the PDF
   data/           the price snapshot used
+  reports/<last close>/
+    results.json  every number in the note
+    dr_copper_<date>.pdf
   tests/
 ```
 
@@ -64,5 +93,8 @@ copper/
 ```bash
 cd copper
 python -m pip install -r requirements.txt
+python -m dr_copper fetch     # refresh data/prices.csv (skip to reuse the snapshot)
+python -m dr_copper test      # pre-registered test and side analyses -> reports/<last close>/results.json
+python -m dr_copper report    # the PDF
 python -m pytest -q
 ```
