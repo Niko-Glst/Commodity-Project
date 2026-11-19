@@ -17,6 +17,7 @@ The forecast log only grows, so the track record maps more data every week.
 | 13 Nov 2026 | [gold_desk_2026-11-13.pdf](reports/2026-11-13/gold_desk_2026-11-13.pdf) | Weekly, Friday close (covers two weeks: no weekly forecast was logged on 6 Nov); first rolling-window test |
 | 18 Nov 2026 | [gold_desk_flash_2026-11-18.pdf](reports/2026-11-18/gold_desk_flash_2026-11-18.pdf) | One-off: overnight break below $3,800, against the 13 Nov forecast ([README](reports/2026-11-18/README.md)) |
 | 19 Nov 2026 | [gold_desk_summary_2026-11-19.pdf](reports/2026-11-19/gold_desk_summary_2026-11-19.pdf) | One-off: why gold is falling (Fed minutes, real yields, dollar, de-risking) ([README](reports/2026-11-19/README.md)) |
+| 19 Nov 2026 | [gold_cycles_since_1975.pdf](reports/2026-11-19-cycles/gold_cycles_since_1975.pdf) | One-off: gold's peaks and quiet periods since 1975 compared with now ([README](reports/2026-11-19-cycles/README.md)) |
 
 Each note has its own folder `reports/<date>/` with the numbers behind it.
 Weekly notes add a row here; one-off notes also carry their data snapshot and
