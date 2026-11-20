@@ -19,6 +19,7 @@ The forecast log only grows, so the track record maps more data every week.
 | 19 Nov 2026 | [gold_desk_summary_2026-11-19.pdf](reports/2026-11-19/gold_desk_summary_2026-11-19.pdf) | One-off: why gold is falling (Fed minutes, real yields, dollar, de-risking) ([README](reports/2026-11-19/README.md)) |
 | 19 Nov 2026 | [gold_cycles_since_1975.pdf](reports/2026-11-19-cycles/gold_cycles_since_1975.pdf) | One-off: gold's peaks and quiet periods since 1975 compared with now ([README](reports/2026-11-19-cycles/README.md)) |
 | 20 Nov 2026 | [gold_report_2026-11-20.pdf](reports/2026-11-20/gold_report_2026-11-20.pdf) | Full report: the 2026 sell-off, macro, flows, past peaks, all tests, 14 number checks ([README](reports/2026-11-20/README.md)) |
+| 20 Nov 2026 | [gold_full_analysis_2026-11-20.pdf](reports/2026-11-20-full/gold_full_analysis_2026-11-20.pdf) | Full analysis: adds where money is going (sectors, fund flows, stress) and what other markets did after each gold peak; 19 number checks ([README](reports/2026-11-20-full/README.md)) |
 
 Each note has its own folder `reports/<date>/` with the numbers behind it.
 Weekly notes add a row here; one-off notes also carry their data snapshot and

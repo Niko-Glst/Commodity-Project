@@ -1,0 +1,138 @@
+{
+ "_note": "Copied 20 Nov 2026 from copper/reports/2026-11-18/results.json and rotation/reports/2026-11-18/results.json (branch copper-tech) so this report rebuilds on weekly-desk too.",
+ "copper_preregistered": [
+  {
+   "candidate": "Copper, past 4 weeks",
+   "n": 1098,
+   "r2_os": -0.0082205839,
+   "cw_p": 0.5808091825,
+   "r2_early": -0.0057180252,
+   "r2_late": -0.0107263571,
+   "qualifies": false
+  },
+  {
+   "candidate": "Copper, past 13 weeks",
+   "n": 1089,
+   "r2_os": -0.0045548801,
+   "cw_p": 0.2473196015,
+   "r2_early": 0.0010240623,
+   "r2_late": -0.0100747154,
+   "qualifies": false
+  },
+  {
+   "candidate": "Copper/gold ratio, past 13 weeks",
+   "n": 1089,
+   "r2_os": -0.0038040448,
+   "cw_p": 0.2770799836,
+   "r2_early": 0.0055238642,
+   "r2_late": -0.0130331277,
+   "qualifies": false
+  }
+ ],
+ "rotation_profit_taking": {
+  "spearman": -0.4991789819376027,
+  "p": 0.006846381633855575,
+  "n": 28,
+  "slope": -0.1603277410416876,
+  "intercept": -0.03416240283581762,
+  "top5": [
+   "USO",
+   "SMH",
+   "XLE",
+   "COPX",
+   "XLK"
+  ],
+  "top5_since_peak": -0.17052538962458147,
+  "rest_since_peak": -0.03849795598202534
+ },
+ "rotation_robustness": [
+  {
+   "start": "2026-10-01",
+   "universe": "All 28",
+   "n": 28,
+   "raw": -0.5046524357,
+   "raw_p": 0.0061687314,
+   "scaled": -0.3568691845,
+   "scaled_p": 0.0622939863,
+   "t_mom_vol": -0.2114306275,
+   "t_mom_beta": -2.5011955239
+  },
+  {
+   "start": "2026-10-01",
+   "universe": "Equity sectors",
+   "n": 13,
+   "raw": -0.456043956,
+   "raw_p": 0.1172830654,
+   "scaled": -0.3956043956,
+   "scaled_p": 0.1808891631,
+   "t_mom_vol": -1.5585760129,
+   "t_mom_beta": -2.0720595897
+  },
+  {
+   "start": "2026-10-06",
+   "universe": "All 28",
+   "n": 28,
+   "raw": -0.4991789819,
+   "raw_p": 0.0068463816,
+   "scaled": -0.3388067871,
+   "scaled_p": 0.0777918642,
+   "t_mom_vol": -0.0534008483,
+   "t_mom_beta": -2.2197726414
+  },
+  {
+   "start": "2026-10-06",
+   "universe": "Equity sectors",
+   "n": 13,
+   "raw": -0.3516483516,
+   "raw_p": 0.2386997053,
+   "scaled": -0.2857142857,
+   "scaled_p": 0.3440002183,
+   "t_mom_vol": -1.215724226,
+   "t_mom_beta": -2.0119085957
+  },
+  {
+   "start": "2026-10-15",
+   "universe": "All 28",
+   "n": 28,
+   "raw": -0.372194855,
+   "raw_p": 0.0511284651,
+   "scaled": -0.1483305966,
+   "scaled_p": 0.451276451,
+   "t_mom_vol": 0.1730730947,
+   "t_mom_beta": -2.6607314103
+  },
+  {
+   "start": "2026-10-15",
+   "universe": "Equity sectors",
+   "n": 13,
+   "raw": -0.4615384615,
+   "raw_p": 0.1123759706,
+   "scaled": -0.3846153846,
+   "scaled_p": 0.19441292,
+   "t_mom_vol": -1.4281458696,
+   "t_mom_beta": -2.2651988134
+  },
+  {
+   "start": "2026-11-01",
+   "universe": "All 28",
+   "n": 28,
+   "raw": -0.4033935413,
+   "raw_p": 0.0332843617,
+   "scaled": -0.2085385878,
+   "scaled_p": 0.2869048706,
+   "t_mom_vol": -1.8399211834,
+   "t_mom_beta": -3.3499127111
+  },
+  {
+   "start": "2026-11-01",
+   "universe": "Equity sectors",
+   "n": 13,
+   "raw": -0.6428571429,
+   "raw_p": 0.0177924507,
+   "scaled": -0.5989010989,
+   "scaled_p": 0.0305541142,
+   "t_mom_vol": -3.8806877594,
+   "t_mom_beta": -3.5109267391
+  }
+ ]
+}
