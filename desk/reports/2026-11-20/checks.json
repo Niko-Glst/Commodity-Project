@@ -1,0 +1,72 @@
+[
+ {
+  "check": "Latest gold price: 5-minute bar vs daily bar",
+  "result": "PASS",
+  "detail": "5-min 3,506.0 at 13:45 ET vs daily row 3,506.0"
+ },
+ {
+  "check": "Weekly change computed two ways",
+  "result": "PASS",
+  "detail": "weekly closes -9.79%; direct -9.79%"
+ },
+ {
+  "check": "Record close",
+  "result": "PASS",
+  "detail": "max GC=F close 5,318.4 on 29 Jan 2026"
+ },
+ {
+  "check": "13 Nov forecast: stored grid vs re-simulated paths",
+  "result": "PASS",
+  "detail": "1st percentile, week ahead: stored 3,588.4, re-simulated 3,588.4; today's price below both (grid PIT 0.000, simulated PIT 0.0024)"
+ },
+ {
+  "check": "Track record recomputed from the forecast store",
+  "result": "PASS",
+  "detail": "1-week 90% coverage, all history: 90.3% now (n=1087) vs 90.3% on 13 Nov"
+ },
+ {
+  "check": "CPI: gaps in the FRED series handled",
+  "result": "PASS",
+  "detail": "missing months since 2024: Oct 2025 (interpolated). 12-month CPI 3.95%; skipping the gap would give a 13-month change of 4.08%"
+ },
+ {
+  "check": "Real yield + breakeven = nominal 10-year (Fisher identity)",
+  "result": "PASS",
+  "detail": "18 Nov: 2.88 + 2.19 = 5.07 vs 5.07"
+ },
+ {
+  "check": "10-year yield: FRED vs Yahoo",
+  "result": "PASS",
+  "detail": "largest gap over the last 5 common days 0.004 pt"
+ },
+ {
+  "check": "Dollar strength: DXY vs broad trade-weighted dollar",
+  "result": "PASS",
+  "detail": "since 6 Oct: DXY +2.0%, broad dollar +1.4% (to 13 Nov)"
+ },
+ {
+  "check": "ICI money funds: institutional + retail = total",
+  "result": "PASS",
+  "detail": "20 weeks to 18 Nov; largest gap 1 $m"
+ },
+ {
+  "check": "GLD: State Street NAV vs Yahoo market price",
+  "result": "PASS",
+  "detail": "median gap 0.44% over the last 60 common days"
+ },
+ {
+  "check": "GLD: asset bridge (change in assets = flows + price effect)",
+  "result": "PASS",
+  "detail": "price effect from NAV -15.29bn vs assets minus flows -15.14bn"
+ },
+ {
+  "check": "Long history: datahub monthly averages vs COMEX futures",
+  "result": "PASS",
+  "detail": "286 overlapping months; median ratio 0.9994, largest gap 1.6%"
+ },
+ {
+  "check": "Earlier test results reloaded unchanged",
+  "result": "PASS",
+  "detail": "copper R\u00b2 (4 weeks) and profit-taking correlation match the committed results files"
+ }
+]
