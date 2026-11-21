@@ -156,3 +156,49 @@ def test_unfinished_day_is_dropped_only_before_the_close():
     evening = pd.Timestamp("2026-11-03 18:00", tz="America/New_York")
     assert len(drop_unfinished_day(df, morning)) == 1
     assert len(drop_unfinished_day(df, evening)) == 2
+
+
+def _driver_panel(n=1150, seed=7, beta_real=-0.02, shift_at=None, beta_after=None):
+    from gold_desk.drivers import weekly_panel
+    rng = np.random.default_rng(seed)
+    idx = pd.bdate_range("2004-01-02", periods=n * 5)
+    real = 1 + np.cumsum(rng.normal(0, 0.03, len(idx)))
+    b = np.full(len(idx), beta_real)
+    if shift_at is not None:
+        b[idx >= pd.Timestamp(shift_at)] = beta_after
+    gold = 400 * np.exp(np.cumsum(b * np.diff(real, prepend=real[0]) + rng.normal(0, 0.008, len(idx))))
+    daily = pd.DataFrame({"gold": gold, "real": real, "be": 2 + np.cumsum(rng.normal(0, 0.01, len(idx))),
+                          "dxy": 90 * np.exp(np.cumsum(rng.normal(0, 0.004, len(idx)))),
+                          "vix": 18 * np.exp(np.cumsum(rng.normal(0, 0.03, len(idx))) * 0.1),
+                          "spx": 1000 * np.exp(np.cumsum(rng.normal(0, 0.01, len(idx)))),
+                          "oil": 60 * np.exp(np.cumsum(rng.normal(0, 0.02, len(idx))))}, index=idx)
+    return weekly_panel(daily)
+
+
+def test_attribution_uses_only_past_betas():
+    from gold_desk.drivers import attribution
+    p = _driver_panel()
+    a0 = attribution(p, ["d_real", "r_dxy"])
+    moved = p.copy()
+    cut = p.index[600]
+    moved.loc[moved.index > cut, "r_gold"] *= -3
+    a1 = attribution(moved, ["d_real", "r_dxy"])
+    pd.testing.assert_frame_equal(a0.loc[:cut], a1.loc[:cut])
+
+
+def test_decoupling_detects_a_weaker_real_yield_link():
+    from gold_desk.drivers import decoupling
+    assert decoupling(_driver_panel(beta_real=-0.08, shift_at="2022-03-01", beta_after=0.0))["confirmed"]
+    assert not decoupling(_driver_panel(beta_real=-0.08))["confirmed"]
+
+
+def test_h3_finds_a_real_predictor_and_rejects_noise():
+    from gold_desk.drivers import evaluate, oos
+    rng = np.random.default_rng(9)
+    idx = pd.date_range("2006-01-06", periods=1000, freq="W-FRI")
+    x = rng.normal(0, 1, 1000)
+    good = pd.DataFrame({"target": 0.5 * x + rng.normal(0, 1, 1000), "sig": x}, index=idx)
+    r = evaluate(oos(good, "sig"))
+    assert r["r2"] > 0.05 and r["cw_p"] < 0.001
+    noise = pd.DataFrame({"target": rng.normal(0, 1, 1000), "sig": x}, index=idx)
+    assert evaluate(oos(noise, "sig"))["r2"] < 0.01
