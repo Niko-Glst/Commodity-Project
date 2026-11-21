@@ -197,6 +197,24 @@ takes off more premium than the data support. Changing the correction now,
 after seeing the result, would be fitting to this sample, so the 1-week gain
 stays a lead for a test on new live data rather than a reason to switch.
 
+## Drivers: what moves gold (added 21 Nov 2026)
+
+`gold_desk/drivers.py` explains moves after the fact and tests whether any driver predicts the next one.
+The GARCH model is unchanged: it sizes moves; the driver module says why they happened.
+
+- **Attribution (descriptive):** each week's gold return split into real yield, breakeven inflation,
+  dollar, VIX, US stocks, oil, speculative positioning and ETF flows, with betas fitted on the previous
+  156 weeks only.
+- **Pre-registered tests** (fixed before the first run, each a claim from the *In Gold We Trust* report 2026):
+  - H1, decoupling from real yields: the weekly gold-on-TIPS slope from March 2022 is less negative than
+    in 2010-2021, one-sided p < 0.05 (HAC, 4 lags).
+  - H2, procyclical ETF flows: weekly GLD flows rise after four weeks of gains, slope > 0 with p < 0.05.
+  - H3, positioning and flows as predictors of the next four weeks: managed-money net long share, its
+    four-week change, GLD flows over four weeks. Same rule as the copper test: out-of-sample R^2 > 0,
+    Clark-West p < 0.05/3, R^2 > 0 in both halves. Signals use only data published before each origin.
+- **Event study (descriptive):** stress sell-offs (VIX >= 30, gold down 4% or more in a week) and what
+  followed.
+
 Backfilled forecasts use only data up to their own date, but today's data
 vintage. Live forecasts record what was known on the day; they are the clean
 out-of-sample record.
