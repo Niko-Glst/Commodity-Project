@@ -20,6 +20,8 @@ The forecast log only grows, so the track record maps more data every week.
 | 19 Nov 2026 | [gold_cycles_since_1975.pdf](reports/2026-11-19-cycles/gold_cycles_since_1975.pdf) | One-off: gold's peaks and quiet periods since 1975 compared with now ([README](reports/2026-11-19-cycles/README.md)) |
 | 20 Nov 2026 | [gold_report_2026-11-20.pdf](reports/2026-11-20/gold_report_2026-11-20.pdf) | Full report: the 2026 sell-off, macro, flows, past peaks, all tests, 14 number checks ([README](reports/2026-11-20/README.md)) |
 | 20 Nov 2026 | [gold_full_analysis_2026-11-20.pdf](reports/2026-11-20-full/gold_full_analysis_2026-11-20.pdf) | Full analysis: adds where money is going (sectors, fund flows, stress) and what other markets did after each gold peak; 19 number checks ([README](reports/2026-11-20-full/README.md)) |
+| 20 Nov 2026 | [gold_weekly_monitor_2026-11-20.pdf](reports/2026-11-20-weekly/gold_weekly_monitor_2026-11-20.pdf) | Weekly monitor (14 slides, landscape): week to Friday 20 Nov, driver attribution, positioning in tonnes ([README](reports/2026-11-20-weekly/README.md)) |
+| 21 Nov 2026 | [gold_annual_review_2026.pdf](reports/2026-annual-review/gold_annual_review_2026.pdf) | Annual review 2026, year to 20 Nov (13 pages, portrait), incl. In Gold We Trust theses checked ([README](reports/2026-annual-review/README.md)) |
 
 Each note has its own folder `reports/<date>/` with the numbers behind it.
 Weekly notes add a row here; one-off notes also carry their data snapshot and
