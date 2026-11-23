@@ -202,3 +202,69 @@ def test_h3_finds_a_real_predictor_and_rejects_noise():
     assert r["r2"] > 0.05 and r["cw_p"] < 0.001
     noise = pd.DataFrame({"target": rng.normal(0, 1, 1000), "sig": x}, index=idx)
     assert evaluate(oos(noise, "sig"))["r2"] < 0.01
+
+
+# ------------------------------------------------------------------ spring (H4-H6)
+
+def _spring_series(n=3600, seed=11, phi=0.93, spring=True):
+    """Log price = random-walk value + AR(1) stretch (a strong spring); spring=False gives a plain random walk."""
+    rng = np.random.default_rng(seed)
+    v = np.cumsum(rng.normal(0, 0.004, n))
+    x = np.zeros(n)
+    if spring:
+        e = rng.normal(0, 0.012, n)
+        for t in range(1, n):
+            x[t] = phi * x[t - 1] + e[t]
+    else:
+        v = np.cumsum(rng.normal(0, 0.0065, n))
+    idx = pd.bdate_range("2004-01-01", periods=n)
+    return pd.Series(1000 * np.exp(v + x), index=idx)
+
+
+def _spring_records(gold):
+    sig = float(np.log(gold).diff().std())
+    z = np.percentile(np.random.default_rng(0).normal(0, 1, 200_000), GRID_Q)
+    return [{"origin": f"{d:%Y-%m-%d}", "spot": float(gold[d]), "source": "backfill",
+             "fit": {"var_next": sig ** 2},
+             "grid": {str(h): list(gold[d] * np.exp(z * sig * np.sqrt(h))) for h in HORIZONS}}
+            for d in gold.index[250:-30:5]]
+
+
+def test_stretch_uses_only_past_closes():
+    from gold_desk.spring import stretch_panel
+    gold = _spring_series()
+    recs = _spring_records(gold)
+    a = stretch_panel(recs, gold)
+    changed = gold.copy()
+    changed.iloc[1500:] *= 1.5
+    b = stretch_panel(recs, changed)
+    early = a["pos"] < 1500
+    assert np.allclose(a.loc[early, "s50"], b.loc[early, "s50"])
+    assert np.allclose(a.loc[early, "s200"], b.loc[early, "s200"])
+
+
+def test_spring_tests_find_a_spring_and_reject_a_random_walk():
+    from gold_desk.spring import h4, spring_check, spring_qualifies, stretch_panel
+    gold = _spring_series(spring=True)
+    recs = _spring_records(gold)
+    p = stretch_panel(recs, gold)
+    assert h4(p).set_index("anchor").loc[50, "passed"]
+    check = spring_check(recs, gold, p, 50, burn_in=150)
+    assert check.set_index("h").loc[21, "change"] < 0
+    assert spring_qualifies(check, p_max=0.05)
+
+    walk = _spring_series(spring=False)
+    recs_w = _spring_records(walk)
+    pw = stretch_panel(recs_w, walk)
+    assert not h4(pw)["passed"].any()
+    assert not spring_qualifies(spring_check(recs_w, walk, pw, 50, burn_in=150))
+
+
+def test_big_moves_use_past_volatility_only():
+    from gold_desk.spring import big_moves
+    gold = _gold(n=600, seed=4)
+    gold.iloc[400:] = gold.iloc[400:] * 0.9          # one 10% gap down on day 400
+    ev = big_moves(gold)
+    assert gold.index[400] in set(ev["date"])
+    row = ev.set_index("date").loc[gold.index[400]]
+    assert row["z"] < -3 and np.isclose(row["sigma"], np.log(gold).diff().iloc[337:400].std())

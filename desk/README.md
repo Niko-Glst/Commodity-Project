@@ -218,6 +218,26 @@ The GARCH model is unchanged: it sizes moves; the driver module says why they ha
 - **Event study (descriptive):** stress sell-offs (VIX >= 30, gold down 4% or more in a week) and what
   followed.
 
+## Spring: does gold snap back harder the further it is stretched? (pre-registered 23 Nov 2026)
+
+`gold_desk/spring.py`. The idea: gold moves around a 'true value' like a mass on a spring, and the pull
+back grows with the stretch. The GARCH model already makes big moves follow big moves, but in a random
+direction; a spring would add a predictable direction. The rules below were committed before the first
+run on real data.
+
+- **Stretch** at each forecast origin: `s = ln(P / SMA_n) / sigma`, with sigma the model's own next-day
+  sigma at that origin and n = 50 ('fast value') or 200 ('slow value') trading days. Forward returns are
+  standardised the same way: `z_h = ln(P_t+h / P_t) / (sigma * sqrt(h))`.
+- **H4, a spring exists:** OLS of `z_5` on `s` has a negative slope, one-sided p < 0.05/2 (Bonferroni over
+  the two anchors, Newey-West 1 lag), and negative in both halves (before / from 2016).
+- **H5, the spring stiffens:** adding `s|s|` gives it a negative coefficient, one-sided p < 0.05/2.
+- **H6, the gate into the model:** shift the stored zero-drift forecasts by `b_h * s * sigma * sqrt(h)`,
+  with `b_h` estimated only on outcomes known at each origin (after 260 weekly origins). It must pass the
+  drift rule: 1-month quantile score better with p < 0.05/2, better in both halves, 1-week score not
+  worse. Only an anchor that passes H6 enters the live forecast; otherwise the spring runs as a shadow.
+- **Descriptive only:** what followed 3-sigma days (sigma from the previous 63 days), and a Kalman-filter
+  fit of weekly log gold as a random-walk value plus an AR(1) stretch, which gives the spring's half-life.
+
 Backfilled forecasts use only data up to their own date, but today's data
 vintage. Live forecasts record what was known on the day; they are the clean
 out-of-sample record.
