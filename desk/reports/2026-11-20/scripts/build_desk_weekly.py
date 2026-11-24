@@ -351,12 +351,15 @@ FONTS = {"L": "C:/Windows/Fonts/segoeuil.ttf", "R": "C:/Windows/Fonts/segoeui.tt
          "S": "C:/Windows/Fonts/seguisb.ttf"}
 for k, f_ in FONTS.items():
     pdfmetrics.registerFont(TTFont(f"SUI-{k}", f_ if os.path.exists(f_) else FONTS["R"]))
+_it = "C:/Windows/Fonts/segoeuii.ttf"
+pdfmetrics.registerFont(TTFont("SUI-I", _it if os.path.exists(_it) else FONTS["R"]))
+pdfmetrics.registerFontFamily("SUI-R", normal="SUI-R", bold="SUI-B", italic="SUI-I", boldItalic="SUI-B")
 C = colors.HexColor
 st = lambda name, **kw: ParagraphStyle(name, **{"fontName": "SUI-R", "fontSize": 10, "leading": 13.2, "textColor": C(INK), **kw})  # noqa: E731
 BUL = st("bul", leftIndent=10, bulletIndent=0, spaceAfter=5, fontSize=9.6, leading=12.6)
 CELL = st("cell", fontSize=8, leading=10)
 CELLB = st("cellb", fontName="SUI-B", fontSize=8, leading=10)
-out_pdf = OUTDIR / "gold_desk_2026-11-20.pdf"
+out_pdf = Path(os.environ.get("DESK_NOTE_OUT", OUTDIR / "gold_desk_2026-11-20.pdf"))   # override to render elsewhere
 cv = rl_canvas.Canvas(str(out_pdf), pagesize=(W, H))
 cv.setTitle("Gold Desk Weekly, week to 20 November 2026")
 cv.setAuthor("Nikolay Gelshtein")
@@ -382,7 +385,7 @@ def new_slide(title, source=""):
     cv.setFont("SUI-R", 6.8)
     if source:
         cv.drawRightString(W - 36, 18, source)
-    cv.drawString(36, 18, "Gold Desk Weekly  |  week to Fri 20 Nov 2026, news to Sun 22 Nov")
+    cv.drawString(36, 18, "Gold Desk Weekly  |  week to Fri 20 Nov 2026, news to Mon 23 Nov")
     cv.setFont("SUI-B", 8)
     cv.setFillColor(C(INK))
     cv.drawRightString(W - 36, 36, str(page[0]))
@@ -465,6 +468,14 @@ REC_PREV = [r_ for r_ in LIVE if r_["origin"] == "2026-11-13"][0]
 FC = Forecast.from_record(REC)
 MD, MP = S["model"], S_PREV["model"]
 LF = S["last_forecast"]
+# Monday 23 Nov (added after the Sunday edition): close, intraday bars and the spring results
+SPR = json.load(open(OUTDIR / "spring.json"))
+MOND = SPR["monday"]
+MON = pd.Timestamp("2026-11-23")
+m5 = pd.read_csv(OUTDIR / "data" / "monday_5m.csv", index_col=0, parse_dates=True)
+md = pd.read_csv(OUTDIR / "data" / "monday_daily.csv", index_col=0, parse_dates=True)
+assert abs(md.loc[MON, "GC=F"] - MOND["close"]) < 0.01 and abs(md.loc[FRI, "GC=F"] - gold.iloc[-1]) < 0.05
+gold_sc = pd.concat([gold, pd.Series([MOND["close"]], index=[MON])])   # scores now include Monday's close
 # COMEX has no settlement on Thanksgiving (26 Nov): count trading days around it
 BD = pd.offsets.CustomBusinessDay(holidays=["2026-11-26", "2026-12-25", "2027-01-01"])
 
@@ -478,19 +489,19 @@ gq = lambda rec, h, q: float(rec["grid"][str(h)][GQ.index(q)])  # noqa: E731
 HLAB = {1: "1 day", 5: "1 week", 10: "2 weeks", 21: "1 month"}
 
 # scorecard: every live forecast made before this one
-scored = score([r_ for r_ in LIVE if r_["origin"] < S["origin"]], gold)
+scored = score(LIVE, gold_sc)
 scd = {(str(pd.Timestamp(r_.origin).date()), int(r_.h)): r_ for r_ in scored.itertuples()}
 card = []
-for rec in LIVE[:-1]:
+for rec in LIVE:
     for h in (1, 5, 10, 21):
         row = {"origin": rec["origin"], "h": h, "target": str(hdate(rec["origin"], h).date()),
                "q5": gq(rec, h, 5), "q95": gq(rec, h, 95)}
         if (rec["origin"], h) in scd:
             r_ = scd[(rec["origin"], h)]
             row.update(realised=float(r_.realised), pit=float(r_.pit), inside=bool(r_.inside90))
-            k = gold.index.get_loc(pd.Timestamp(rec["origin"]))
-            assert str(gold.index[k + h].date()) == row["target"], row
-            assert abs(gold.iloc[k + h] - row["realised"]) < 0.01, row
+            k = gold_sc.index.get_loc(pd.Timestamp(rec["origin"]))
+            assert str(gold_sc.index[k + h].date()) == row["target"], row
+            assert abs(gold_sc.iloc[k + h] - row["realised"]) < 0.01, row
         card.append(row)
 n_sc = sum("pit" in c_ for c_ in card)
 n_in = sum(c_.get("inside", False) for c_ in card)
@@ -542,6 +553,9 @@ ax.plot(hist_.index, hist_.values, color="#b8860b", lw=1.8, marker="o", ms=2.4, 
 sun_t = pd.Timestamp("2026-11-22 23:55")
 ax.plot([FRI, sun_t], [gold.iloc[-1], weekend["gold_last"]], color=ORANGE, lw=1.1, ls=":")
 ax.scatter([sun_t], [weekend["gold_last"]], color=ORANGE, s=22, zorder=5, label="Sunday 22 Nov, 23:55 ET")
+mon_t = MON + pd.Timedelta(hours=14)
+ax.plot([sun_t, mon_t], [weekend["gold_last"], MOND["close"]], color=VIOLET, lw=1.1, ls=":")
+ax.scatter([mon_t], [MOND["close"]], color=VIOLET, s=22, zorder=5, label="Monday 23 Nov close")
 ax.annotate(f"Fri ${gold.iloc[-1]:,.0f}\n{LF['pit'] * 100:.1f}th percentile", xy=(FRI, gold.iloc[-1]), xytext=(-92, -4),
             textcoords="offset points", fontsize=7.4, color=INK, va="center",
             arrowprops={"arrowstyle": "-", "color": MUTED, "lw": 0.7})
@@ -606,6 +620,69 @@ ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %y"))
 ax.set_ylabel("$/oz")
 ax.legend(loc="lower left", fontsize=7, ncol=2)
 c_fan = save(fig, "fan")
+mon_pct_1w = float(np.interp(MOND["close"], REC["grid"]["5"], GQ)) / 100
+
+# Monday: Sunday open to Monday close, 5-minute bars
+gm = m5["GC=F"].dropna().loc["2026-11-22 18:00":"2026-11-23 17:00"]
+fig, ax = plt.subplots(figsize=(6.0, 2.15))
+xm_ = np.arange(len(gm))
+ax.plot(xm_, gm.values, color="#b8860b", lw=1.3)
+ax.axhline(gold.iloc[-1], color=MUTED, lw=0.8, ls="--")
+ax.text(xm_[-1], gold.iloc[-1] + 4, f"Friday close ${gold.iloc[-1]:,.0f}", ha="right", va="bottom", fontsize=7, color=MUTED)
+ax.set_xticks(list(xm_[::36]))
+ax.set_xticklabels([t_.strftime("%a %H:%M") for t_ in gm.index[::36]], fontsize=6.6)
+ax.yaxis.set_major_formatter(fmt_usd)
+c_mon_line = save(fig, "monday_line")
+
+MB = [("Gold (COMEX)", "GC=F"), ("Silver", "SI=F"), ("S&P 500", "^GSPC"), ("Nasdaq-100", "^NDX"),
+      ("Dollar index", "DX-Y.NYB"), ("WTI crude", "CL=F")]
+fig, ax = plt.subplots(figsize=(6.0, 2.2))
+y_ = np.arange(len(MB))[::-1]
+vals = [float(np.expm1(MOND["chg"][t_])) * 100 for _, t_ in MB]
+ax.barh(y_, vals, color=["#b8860b" if t_ == "GC=F" else "#1c5cab" for _, t_ in MB], height=0.6)
+for yi, v in zip(y_, vals):
+    ax.text(v + (0.1 if v >= 0 else -0.1), yi, f"{v:+.2f}%" if abs(v) < 1 else f"{v:+.1f}%", va="center",
+            ha="left" if v >= 0 else "right", fontsize=7.4, color=INK2)
+ax.set_yticks(y_)
+ax.set_yticklabels([n_ for n_, _ in MB], fontsize=7.8)
+ax.axvline(0, color="#c3c2b7", lw=0.8)
+ax.grid(axis="x", color=GRID)
+ax.grid(axis="y", visible=False)
+ax.set_xlim(min(vals) - 1.6, max(vals) + 1.4)
+ax.set_xlabel("Change from Friday's close to Monday's close, %", fontsize=7.6)
+c_mon_bars = save(fig, "monday_bars")
+
+# spring: next week's move by stretch decile
+sp = pd.read_csv(OUTDIR / "data" / "spring_panel.csv", parse_dates=["origin"])
+fig, axs = plt.subplots(1, 2, figsize=(6.4, 2.9), sharey=True)
+for ax, n_ in zip(axs, (50, 200)):
+    dd = sp.dropna(subset=[f"s{n_}", "z5"])
+    g_ = dd.groupby(pd.qcut(dd[f"s{n_}"], 10), observed=True)
+    xm2, ym2, se2 = g_[f"s{n_}"].mean(), g_["z5"].mean(), g_["z5"].std() / np.sqrt(g_.size())
+    ax.errorbar(xm2.values, ym2.values, yerr=2 * se2.values, fmt="o", color=BLUE, ms=4, lw=1, capsize=2)
+    ax.axhline(0, color="#c3c2b7", lw=0.8)
+    s_now = SPR["shadow"][str(n_)]["stretch"]
+    ax.axvline(s_now, color=ORANGE, lw=1, ls="--")
+    ax.text(s_now, 0.97, " Fri 20 Nov", transform=ax.get_xaxis_transform(), color=ORANGE, fontsize=7, va="top")
+    ax.set_title(f"Stretch from the {n_}-day average", fontsize=8.4, color=INK2)
+    ax.set_xlabel("Stretch, daily sigmas (decile means)", fontsize=7.4)
+axs[0].set_ylabel("Next week's move, sigmas", fontsize=7.6)
+c_spring_bins = save(fig, "spring_bins")
+
+# spring: price against the Kalman-filter value
+sst_all = pd.read_csv(OUTDIR / "data" / "spring_state.csv", index_col=0, parse_dates=True)
+ss_lower = int((sst_all["stretch"] < sst_all["stretch"].iloc[-1]).sum())
+sst = sst_all.loc["2024-01-01":]
+wkp = gold.resample("W-FRI").last().loc["2024-01-01":]
+fig, ax = plt.subplots(figsize=(6.2, 2.5))
+ax.plot(wkp.index, wkp.values, color="#b8860b", lw=1.5, label="COMEX gold, weekly close")
+ax.plot(sst.index, np.exp(sst["value"]), color=BLUE, lw=1.2, ls="--", label="Estimated value (Kalman filter)")
+ax.yaxis.set_major_formatter(fmt_usd)
+ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %y"))
+ax.legend(loc="upper left", fontsize=7)
+c_spring_value = save(fig, "spring_value")
+OUT["desk"]["monday"] = MOND
+OUT["desk"]["spring"] = "see spring.json"
 
 
 def key_block(x, y_top, w, h, title, items):
@@ -652,27 +729,28 @@ cv.drawString(48, 174, "Desk Note")
 cv.setFont("SUI-R", 15)
 cv.drawString(48, 126, "Week to Friday 20 November 2026")
 cv.setFont("SUI-R", 11)
-cv.drawString(48, 104, "With the weekend and the Sunday open to 22 November, 23:55 ET")
+cv.drawString(48, 104, "With the weekend, Monday's bounce and a spring test, to the 23 November close")
 cv.setFont("SUI-R", 8.5)
 cv.drawString(48, 52, "All data as of the Friday 20 November close unless stated otherwise")
 
 # 2 what you need to know
-new_slide("What you need to know – a liquidation week, a Sunday bounce",
-          "Chart of the week: desk forecast logged on 13 Nov (GARCH-t, zero drift, 20,000 paths) and COMEX closes; Sunday: 5-minute futures. Prices: Yahoo Finance.")
+frac_back = (MOND["close"] - gold.iloc[-1]) / (gold.loc[PREV] - gold.iloc[-1])
+new_slide("What you need to know \u2013 a liquidation week, a Monday bounce",
+          "Chart of the week: desk forecast logged on 13 Nov (GARCH-t, zero drift, 20,000 paths) and COMEX closes; Sunday: 5-minute futures; Monday: preliminary close. Prices: Yahoo Finance.")
 bar_header(36, 446, 440, "Highlights")
 bar_header(484, 446, 440, "Chart of the week: last week's range and where gold landed")
 text_block(36, 440, 440, [
     f"Gold had its worst week since at least 2000 in our data: <b>{pc(wk['ww'])}</b> to {usd(wk['close'])} (COMEX), "
     f"{pc(wk['from_peak'], 0)} from the {pd.Timestamp(wk['peak_date']):%d %b} record and {pc(wk['ytd'])} for the year.",
-    f"A hawkish Fed met an AI-led stock rout: the S&amp;P 500 fell {abs(spx['ww']) * 100:.1f}%, the VIX closed at {vol['vix']:.1f}. "
-    f"Gold fell with stocks while the 10-year yield dropped {abs(P['US 10Y']['ww']):.0f} bp: forced selling, not a new macro case.",
-    f"The desk's 1-week forecast of 13 Nov missed: Friday's close was at the <b>{LF['pit'] * 100:.1f}th percentile</b>, "
-    f"below the 90% range of {usd(LF['band90'][0])}-{usd(LF['band90'][1])}. Friday's {pc(fri_ret)} was "
-    f"{LF['worst_day_x_sigma']:.1f} times the daily move the model expected.",
-    f"<b>Sunday evening</b> gold reopened at {usd(weekend['gold_open'])} and stood at {usd(weekend['gold_last'])} by 23:55 ET "
-    f"({pc(WG['GC=F']['chg'])}), with S&amp;P 500 futures {pc(WG['ES=F']['chg'])}: a relief bounce for all risk assets together.",
-    f"Ranges are wider: next-day volatility {MD['vol_next'] * 100:.1f}% (13 Nov: {MP['vol_next'] * 100:.1f}%). "
-    f"90% range for the coming week {usd(fw[5]['q5'])}-{usd(fw[5]['q95'])}.",
+    f"A hawkish Fed met an AI-led stock rout (S&amp;P 500 down {abs(spx['ww']) * 100:.1f}%). Gold fell with stocks while "
+    f"the 10-year yield dropped {abs(P['US 10Y']['ww']):.0f} bp: forced selling, not a new macro case.",
+    f"The desk's 1-week range of 13 Nov missed: Friday closed at the <b>{LF['pit'] * 100:.1f}th percentile</b>, a "
+    f"{LF['worst_day_x_sigma']:.1f}-sigma day for the model.",
+    f"<b>Monday</b> took back {frac_back * 100:.0f}% of the fall: {pc(np.expm1(MOND['chg']['GC=F']))} to {usd(MOND['close'])}, "
+    f"above the 95th percentile of Friday's 1-day range, as stocks jumped {np.expm1(MOND['chg']['^GSPC']) * 100:.1f}%. "
+    "The drivers explain none of it.",
+    "<b>Is there a spring pulling gold back to value?</b> Not in 20 years of weekly data: our pre-registered tests "
+    "failed; only extreme stretches show a hint of snap-back. The model stays at zero drift, with wide ranges.",
 ], bg=BOX, h=252)
 image(c_cotw2, 490, 438, w=428)
 iw_, ih_ = ImageReader(c_bars).getSize()
@@ -681,16 +759,16 @@ image(c_bars, 36 + (888 - 140 * iw_ / ih_) / 2, 180, h=140)
 # 3 desk view
 new_slide("Desk view", "Model: GARCH(1,1) with Student-t shocks on daily COMEX closes, zero drift, refitted on Friday's close. Tests: gold_desk/backtest.py and gold_desk/drivers.py.")
 key_block(36, 470, 450, 238, "THE DESK VIEW, FROM FRIDAY'S CLOSE", [
-    "<b>Direction: no call.</b> The desk runs a zero-drift model. No drift rule passed our pre-registered tests, and "
-    "positioning and ETF flows failed as predictors (H3, 21 Nov). We do not forecast a rebound or a further fall.",
+    "<b>Direction: no call.</b> The desk runs a zero-drift model. No drift rule, no positioning or flow signal (H3) "
+    "and no spring toward value (H4-H6, 23 Nov) passed our pre-registered tests. We do not forecast the next move.",
     f"<b>Volatility: high and slow to fade.</b> Next-day volatility is {MD['vol_next'] * 100:.1f}% against a long-run "
     f"{MD['vol_long_run'] * 100:.1f}%. With a half-life of {MD['half_life_days']:.0f} trading days, ranges stay wide "
     "through the 8-9 Dec FOMC.",
     f"<b>Regime: liquidation.</b> {unexpl * 100:.0f}% of the week's fall is not explained by rates, the dollar, stress, "
     "stocks, oil or flows. Gold traded as a source of cash, moving with stocks instead of against them.",
     f"<b>The week ahead:</b> PCE on Wednesday is the one scheduled test; Thanksgiving thins trading from Wednesday. "
-    f"The 1-week 90% range is {usd(fw[5]['q5'])}-{usd(fw[5]['q95'])}; Sunday evening's {usd(weekend['gold_last'])} sits "
-    f"near the {nth(sun_pct)} percentile of it.",
+    f"The 1-week 90% range is {usd(fw[5]['q5'])}-{usd(fw[5]['q95'])}; Monday's close of {usd(MOND['close'])} sits "
+    f"near the {nth(mon_pct_1w)} percentile of it.",
 ])
 bar_header(500, 446, 424, "What we watch for a turn")
 text_block(500, 440, 424, [
@@ -736,6 +814,111 @@ image(c_wk_line, 526, 440, w=392)
 bar_header(520, 250, 404, "Friday close to Sunday night")
 image(c_wk_bars, 526, 244, w=392)
 
+# Monday
+new_slide("Monday's bounce", "Monday: Yahoo Finance closes (preliminary) and 5-minute futures, New York time. News: Kitco AM report, investingLive, Invezz, TMGM. Driver betas: desk model of 20 Nov, weekly betas applied to one day.")
+bar_header(36, 446, 470, "What happened on Monday 23 November")
+text_block(36, 438, 470, [
+    f"Gold closed at <b>{usd(MOND['close'])}</b>, up {np.expm1(MOND['chg']['GC=F']) * 100:.1f}% from Friday's close, taking back "
+    f"{frac_back * 100:.0f}% of last week's fall. From Sunday's open it traded between {usd(MOND['low'])} and "
+    f"{usd(MOND['high'])}. Silver rose {np.expm1(MOND['chg']['SI=F']) * 100:.1f}%, the S&amp;P 500 "
+    f"{np.expm1(MOND['chg']['^GSPC']) * 100:.1f}%, the Nasdaq-100 {np.expm1(MOND['chg']['^NDX']) * 100:.1f}%; the VIX fell to "
+    f"{md.loc[MON, '^VIX']:.1f}.",
+    "<b>Why, in the press:</b> bargain hunting and short covering after the worst week in months, and less fear of "
+    "aggressive Fed tightening as the AI selloff clouds the outlook (Kitco); a broad short-covering wave across markets "
+    "(investingLive). Flash PMIs were soft: services 54.7 from 56.1; manufacturing figures differ by source.",
+    f"<b>Not a macro move:</b> the dollar rose {np.expm1(MOND['chg']['DX-Y.NYB']) * 100:.1f}% and the 10-year yield was flat "
+    f"({MOND['chg']['^TNX'] * 100:+.0f} bp). Through the desk's driver betas, the dollar, VIX, stocks and oil explain "
+    f"{MOND['explained'] * 100:+.1f} points of gold's {MOND['chg']['GC=F'] * 100:+.1f}; <b>{MOND['unexplained'] * 100:+.1f} "
+    f"points are unexplained</b>, the mirror image of last week's {wk_drv['residual'] * 100:.1f}.",
+    f"<b>In the model:</b> a {MOND['z']:.1f}-sigma day at the {MOND['pit_garch'] * 100:.1f}th percentile of Friday's 1-day "
+    "forecast: above the 90% range, inside the 98% range. Big moves following big moves is what the GARCH model "
+    "expects; it does not know the direction.",
+], h=390)
+bar_header(520, 446, 404, "COMEX gold, Sunday open to Monday close (5-minute)")
+image(c_mon_line, 526, 440, w=392)
+bar_header(520, 250, 404, "Friday close to Monday close")
+image(c_mon_bars, 526, 244, w=392)
+
+# spring: the test
+H4r = {r_["anchor"]: r_ for r_ in SPR["h4"]}
+H5r = {r_["anchor"]: r_ for r_ in SPR["h5"]}
+H6r = {int(k): {r_["h"]: r_ for r_ in v} for k, v in SPR["h6"].items()}
+sh50, sh200 = SPR["shadow"]["50"], SPR["shadow"]["200"]
+fmtp = lambda v: f"{v:.3f}" if v >= 0.001 else "<0.001"  # noqa: E731
+new_slide("Is there a spring? The test",
+          f"Rules committed before the first run (commit {SPR['prereg_commit']}, gold_desk/spring.py). {H4r[50]['n']:,} weekly origins since 2006; stretch and moves in the model's own daily sigma. Error bars: 2 standard errors.")
+bar_header(36, 446, 470, "The idea, and how far gold is stretched")
+y = text_block(36, 438, 470, [
+    "<b>The idea:</b> gold moves around a true value like a mass on a spring; the further it is stretched, the harder it "
+    "snaps back. The GARCH model already makes big moves follow big moves, but in a random direction; a spring would "
+    "add a predictable pull back toward value.",
+    f"<b>Stretch on Friday:</b> {abs(sh50['stretch']):.1f} daily sigmas below the 50-day average ({usd(sh50['sma'])}), the "
+    f"most of all {sh50['n']:,} weekly origins since 2006; {abs(sh200['stretch']):.1f} below the 200-day average "
+    f"({usd(sh200['sma'])}), the {nth((sh200['rank_low'] + 1) / 100)} most.",
+])
+rows = [["Test", "Anchor", "Estimate", "p", "Result"]]
+for n_ in (50, 200):
+    r_ = H4r[n_]
+    rows.append(["H4 a spring exists", f"{n_}-day", f"slope {r_['coef']:+.4f}", fmtp(r_["p_one_sided"]), "passed" if r_["passed"] else "failed"])
+for n_ in (50, 200):
+    r_ = H5r[n_]
+    rows.append(["H5 it stiffens", f"{n_}-day", f"s|s| {r_['coef']:+.4f}", fmtp(r_["p_one_sided"]), "passed" if r_["passed"] else "failed"])
+for n_ in (50, 200):
+    r_ = H6r[n_][21]
+    rows.append(["H6 better 1-month forecasts", f"{n_}-day", f"score {r_['change'] * 100:+.2f}%", fmtp(r_["p"]),
+                 "passed" if SPR["h6_passed"][str(n_)] else "failed"])
+sty = [("TEXTCOLOR", (4, i_), (4, i_), C(GREEN if rows[i_][4] == "passed" else RED)) for i_ in range(1, len(rows))]
+y = table(rows, 36, y - 4, [160, 60, 110, 60, 80], size=8.6, styles=sty)
+text_block(36, y - 6, 470, [
+    f"Needed: p below {0.05 / 2:.3f} with the right sign (negative slope; lower score). The slope is slightly "
+    "<b>positive</b>: stretched prices drifted on a little, the opposite of a spring.",
+    f"The one hint is H5 on the 50-day anchor: moderate stretches drift on, extreme ones pull back, in both halves of "
+    f"the sample, but p = {H5r[50]['p_one_sided']:.3f} misses the bar. It becomes a fresh test on data the model has not seen.",
+])
+bar_header(520, 446, 404, "Next week's move by stretch (deciles)")
+y = image(c_spring_bins, 526, 440, w=392)
+text_block(520, y - 8, 404, [
+    "Each dot is the average next-week move of one tenth of all weeks, sorted by stretch. A spring would show dots "
+    "falling from left to right (stretched low, then a bounce). They are flat.",
+    "Friday's stretch (dashed) lies far beyond anything in the sample, so the data say little about a case this extreme.",
+], bg=BOX)
+
+# spring: big moves, the spring's size, the Monte Carlo
+MV = {r_["group"]: r_ for r_ in SPR["moves"]}
+SS = SPR["state_space"]
+pull = {k: -SPR["ss_stretch_now"] * (1 - SS["phi"] ** k) for k in (1, 4)}
+cv_all = {r_["h"]: r_ for r_ in S["coverage"] if r_["window"] == "All history"}
+FALLS, ALL = MV["Falls of 3 sigma or more"], MV["All days"]
+new_slide("Big moves, the spring's size and our Monte Carlo",
+          "3-sigma days: close-to-close moves of 3 or more times the standard deviation of the previous 63 days, COMEX daily since 2003. Kalman filter: weekly log gold = random-walk value + AR(1) stretch, 2006-2026, descriptive.")
+bar_header(36, 446, 470, "What followed 3-sigma days since 2003")
+rows = [["", "Days", "Next day, sigmas", "Next day up", "Size next day", "Month, sigmas", "Month up"]]
+for g_ in ("Falls of 3 sigma or more", "Rallies of 3 sigma or more", "All days"):
+    r_ = MV[g_]
+    rows.append([g_.replace(" of 3 sigma or more", ", 3 sigma+"), f"{r_['n']:,}", f"{r_['mean_z1']:+.2f}", f"{r_['up1'] * 100:.0f}%",
+                 f"{r_['abs_z1']:.2f}", f"{r_['mean_z21']:+.2f}", f"{r_['up21'] * 100:.0f}%"])
+y = table(rows, 36, 418, [104, 44, 72, 62, 66, 66, 56], size=8.4)
+text_block(36, y - 8, 470, [
+    f"After big falls the next day was as likely down as up, and {FALLS['abs_z1'] / ALL['abs_z1']:.1f} times the usual "
+    "size: volatility clustering, which the GARCH model already has. The -11% day of 30 Jan 2026 was followed by another fall.",
+    f"Over a month, falls were followed by gains more often ({FALLS['up21'] * 100:.0f}% against {ALL['up21'] * 100:.0f}% of all "
+    f"days). With {FALLS['n']} cases this is a lead, not proof.",
+    f"<b>Our Monte Carlo was not too tame:</b> over {cv_all[1]['n']:,} weeks, {cv_all[1]['below5'] * 100:.1f}% of 1-day closes "
+    f"fell below the 5% line and {cv_all[1]['above95'] * 100:.1f}% above the 95% line, as designed. Big moves come as often "
+    "as the fat tails say; they cluster, and the model clusters them too.",
+])
+bar_header(520, 446, 404, "A spring fitted to the data")
+y = image(c_spring_value, 526, 440, w=392)
+text_block(520, y - 8, 404, [
+    f"Estimated value {usd(SPR['ss_value_now'])} against Friday's {usd(gold.iloc[-1])}: a stretch of "
+    f"{SPR['ss_stretch_now'] * 100:.1f}%, the {nth((ss_lower + 1) / 100)} deepest since 2006, with a half-life of "
+    f"{SS['half_life_weeks']:.1f} weeks.",
+    f"Most of the fall is the value itself moving; the spring part is small (weekly noise {SS['sigma_stretch'] * 100:.1f}% "
+    f"against {SS['sigma_value'] * 100:.1f}% for the value).",
+    f"Added to the Monte Carlo, the spring would lift the centre by about {pull[1] * 100:.1f}% in a week and "
+    f"{pull[4] * 100:.1f}% in a month, against a 1-week 90% range of {usd(fw[5]['q5'])}-{usd(fw[5]['q95'])}.",
+], bg=BOX)
+
 # 5 all about gold
 new_slide("All about Gold", "Sources: CFTC (report of 17 Nov), State Street (GLD), CME FedWatch via press, CNBC, Reuters, Quartz.")
 bar_header(36, 446, 470, "The week in review")
@@ -749,8 +932,8 @@ text_block(36, 438, 470, [
 ], h=168)
 bar_header(36, 262, 470, "Into the new week")
 text_block(36, 254, 470, [
-    f"<b>Sunday's bounce:</b> {pc(WG['GC=F']['chg'])} by 23:55 ET, in step with stocks. After a liquidation week, a "
-    "bounce that moves with stocks tells us little about gold's own demand.",
+    f"<b>Monday's bounce:</b> {pc(np.expm1(MOND['chg']['GC=F']))} to {usd(MOND['close'])}, in step with stocks. After a "
+    "liquidation week, a bounce that moves with stocks tells us little about gold's own demand.",
     "<b>US PCE inflation (Wed 25 Nov, 08:30 ET):</b> headline and core expected at 0.3% m/m. A hot print would harden "
     "the case for hikes beyond December.",
     "<b>Next CFTC report:</b> covers positions to Tue 24 Nov, the first to show how much of the speculative long was "
@@ -801,7 +984,7 @@ cv.drawString(120, 92, f"Most of the week's fall came in the {worst['session']} 
 new_slide("The week ahead", "Consensus: Trading Economics, Investing.com, 1trader (via press, 20 Nov); sources differ where shown. PMI priors and Friday's early close: CNBC. Nowcast: Cleveland Fed.")
 bar_header(36, 446, 520, "Consensus expectations")
 cal = [["Date", "Where", "What", "Prior", "Consensus"],
-       ["Mon 23", "US", "S&P Global flash PMI, manufacturing / services (Nov)", "54.5 / 56.1", "–"],
+       ["Mon 23", "US", "Flash PMI services (Nov): 54.7 released; manufacturing: sources differ", "56.1", "–"],
        ["Tue 24", "US", "Conference Board consumer confidence (Nov)*", "91.7", "92.0"],
        ["Wed 25", "US", "PCE price index, m/m (Oct)", "0.5%", "0.3%"],
        ["Wed 25", "US", "Core PCE, m/m (Oct)", "–", "0.3%"],
@@ -823,7 +1006,7 @@ text_block(570, 418, 354, [
     "ease pressure on real yields.",
     "<b>Beige Book (Wed):</b> how widely officials see inflation spreading, the theme of the minutes.",
     "<b>Liquidity:</b> Thanksgiving thins trading. After forced selling, both further drops and sharp rebounds come "
-    f"easier in thin markets; the model's 1-week 90% range is {usd(fw[5]['q5'])}-{usd(fw[5]['q95'])} (p. 9).",
+    f"easier in thin markets; the model's 1-week 90% range is {usd(fw[5]['q5'])}-{usd(fw[5]['q95'])} (p. 12).",
     "<b>The link with stocks:</b> if gold keeps moving with equities, the selling is still about cash, not about gold.",
 ], bg=BOX, h=300)
 
@@ -849,7 +1032,7 @@ text_block(570, y - 10, 354, [
     f"Shadow fits (not used): a 10-year window gives a 1-week 90% range of {usd(ro['10 years']['week90'][0])}-"
     f"{usd(ro['10 years']['week90'][1])}, a 5-year window {usd(ro['5 years']['week90'][0])}-{usd(ro['5 years']['week90'][1])}. "
     "Neither passed its test, so the full sample stays.",
-    f"Sunday evening's {usd(weekend['gold_last'])} is near the {nth(sun_pct)} percentile of the 1-week range.",
+    f"Monday's close of {usd(MOND['close'])} is near the {nth(mon_pct_1w)} percentile of the 1-week range.",
 ], bullets=True)
 
 # 10 scorecard
@@ -872,14 +1055,17 @@ for i_, c_ in enumerate(card, start=1):
 table(rows, 36, 418, [62, 66, 82, 128, 72, 64, 66], size=8.8, styles=sty)
 bar_header(570, 446, 354, "Share of outcomes inside the 90% range")
 cov = {(r_["window"], r_["h"]): r_ for r_ in S["coverage"]}
+for h in (1, 5, 10, 21):            # live row recomputed with Monday's close
+    sc_h = [c_ for c_ in card if c_["h"] == h and "pit" in c_]
+    cov[("Live only", h)] = {"n": len(sc_h), "inside90": sum(c_["inside"] for c_ in sc_h) / len(sc_h) if sc_h else float("nan")}
 rows = [["Window", "1 day", "1 week", "2 weeks", "1 month"]]
 for wn in ("All history", "Last 52 weeks", "Live only"):
     rows.append([wn] + [(f"{cov[(wn, h)]['inside90'] * 100:.0f}% ({cov[(wn, h)]['n']})" if cov[(wn, h)]["n"] else "–")
                         for h in (1, 5, 10, 21)])
 y = table(rows, 570, 418, [96, 64, 64, 66, 64], size=8.4)
 text_block(570, y - 10, 354, [
-    f"Live so far: {n_in} of {n_sc} scored ranges held the outcome. A 90% range should miss about one time in ten, "
-    "so one miss in five is no verdict; the backfill is the real test.",
+    f"Live so far: {n_in} of {n_sc} scored ranges held the outcome. The two misses went opposite ways on consecutive "
+    "days (below on Friday, above on Monday): ranges too narrow for a liquidation and its reversal, not a biased centre.",
     f"Friday's {pc(LF['worst_day_ret'])} was a {LF['worst_day_x_sigma']:.1f}-sigma day for the model of 13 Nov. With "
     f"its fat tails that has a {p_tail * 100:.2f}% chance per day, about once every {1 / p_tail:,.0f} trading days.",
     f"Daily falls of {abs(fri_ret) * 100:.1f}% or more since 2000: {len(big_falls)} ({', '.join(big_years)}). After such "
@@ -989,11 +1175,53 @@ rows = [["Measure", "Level", "1-month change", "Note"],
 table(rows, 36, 470, [170, 110, 100, 200], size=9.4)
 image(c_vol, 620, 470, w=304)
 
+# further reading
+new_slide("Further reading: springs, mean reversion and forced selling", "Journal articles and books to look up.")
+bar_header(36, 446, 440, "The spring: mean reversion and trends")
+text_block(36, 438, 440, [
+    "<b>Uhlenbeck and Ornstein (1930)</b>, On the theory of the Brownian motion, <i>Physical Review</i>. The spring with "
+    "noise: the Ornstein-Uhlenbeck process.",
+    "<b>Schwartz (1997)</b>, The stochastic behavior of commodity prices, <i>Journal of Finance</i>. Mean-reverting models "
+    "for commodity prices.",
+    "<b>Schwartz and Smith (2000)</b>, Short-term variations and long-term dynamics in commodity prices, <i>Management "
+    "Science</i>. Value plus stretch, the model fitted on p. 7.",
+    "<b>Poterba and Summers (1988)</b>, <i>Journal of Financial Economics</i>; <b>Lo and MacKinlay (1988)</b>, <i>Review of "
+    "Financial Studies</i>. How to test for mean reversion (variance ratios).",
+    "<b>Moskowitz, Ooi and Pedersen (2012)</b>, Time series momentum, <i>Journal of Financial Economics</i>. The opposite "
+    "force: trends over 1 to 12 months, gold included.",
+    "<b>Erb and Harvey (2013)</b>, The golden dilemma, <i>Financial Analysts Journal</i>. Gold's fair value against "
+    "inflation, and how slowly it reverts.",
+    "<b>Cont (2001)</b>, Empirical properties of asset returns, <i>Quantitative Finance</i>. Fat tails and volatility "
+    "clustering, the facts GARCH captures.",
+])
+bar_header(484, 446, 440, "Why big falls bounce: liquidity and forced selling")
+text_block(484, 438, 440, [
+    "<b>Grossman and Miller (1988)</b>, Liquidity and market structure, <i>Journal of Finance</i>. Prices fall to pay "
+    "whoever absorbs forced selling, then recover.",
+    "<b>Campbell, Grossman and Wang (1993)</b>, Trading volume and serial correlation in stock returns, <i>Quarterly "
+    "Journal of Economics</i>. High-volume falls tend to reverse.",
+    "<b>Brunnermeier and Pedersen (2009)</b>, Market liquidity and funding liquidity, <i>Review of Financial Studies</i>. "
+    "Margin calls and liquidity spirals.",
+    "<b>Coval and Stafford (2007)</b>, Asset fire sales (and purchases) in equity markets, <i>Journal of Financial "
+    "Economics</i>. Fire-sale drops and their reversal.",
+    "<b>Duffie (2010)</b>, Asset price dynamics with slow-moving capital, <i>Journal of Finance</i>. Why recovery after "
+    "a shock takes time.",
+    "<b>Nagel (2012)</b>, Evaporating liquidity, <i>Review of Financial Studies</i>. Short-term reversals pay more when "
+    "the VIX is high.",
+    "<b>Hendershott and Menkveld (2014)</b>, Price pressures, <i>Journal of Financial Economics</i>. Inventory-driven "
+    "price pressure and its half-life.",
+])
+text_block(36, 84, 888, [
+    "<b>Books:</b> Pedersen, <i>Efficiently Inefficient</i> (2015); Bouchaud, Bonart, Donier and Gould, <i>Trades, Quotes "
+    "and Prices</i> (2018); Mantegna and Stanley, <i>An Introduction to Econophysics</i> (2000). <b>Data:</b> CFTC "
+    "Commitments of Traders, CME margin notices, World Gold Council Goldhub (ETF flows).",
+], bullets=False)
+
 # 18 method
 new_slide("Method, glossary and sources", "")
 text_block(36, 470, 888, [
     "<b>Prices:</b> Yahoo Finance daily closes to Friday 20 Nov 2026 (COMEX gold and silver futures, indices, ETFs, FX); "
-    "5-minute futures to Sunday 22 Nov 23:55 ET for the weekend page; yields and macro from FRED; positioning from the "
+    "5-minute futures and preliminary closes to Monday 23 Nov; yields and macro from FRED; positioning from the "
     "CFTC disaggregated report (17 Nov); ETF data from State Street.",
     f"<b>Desk model:</b> GARCH(1,1) with Student-t shocks on daily COMEX log returns, zero drift, refitted each Friday; "
     f"20,000 simulated paths start from the next-day variance. Each forecast is logged before the outcome is known "
@@ -1013,7 +1241,11 @@ text_block(36, 470, 888, [
     "<b>News:</b> CNBC (Fed minutes, Waller; Sunday futures, PMI priors, Friday's early close), Fortune (Sunday futures, "
     "the AI selloff), FinanceFeeds (Kitco survey, Chandler and Kitco levels, CME FedWatch), Reuters via Yoopya and "
     "Investing.com (Paulson, jobless claims), Quartz (Goolsbee), Kitco (Empire, retail sales, industrial production), "
-    "Mitrade (Philadelphia Fed, leading indicators), World Gold Council (Q3 2026 demand).",
+    "Mitrade (Philadelphia Fed, leading indicators), World Gold Council (Q3 2026 demand); Monday: Kitco AM report, "
+    "investingLive, Invezz, TMGM.",
+    f"<b>Spring tests (pre-registered 23 Nov, commit {SPR['prereg_commit']}):</b> stretch = distance from the 50- or 200-day "
+    "average in the model's daily sigmas; H4 a pull back exists, H5 it stiffens with the stretch, H6 it improves the "
+    "forecasts (drift rule). All failed. Descriptive: 3-sigma days since 2003 and a Kalman fit of value plus stretch.",
 ])
 cv.save()
 print("wrote", out_pdf, "pages", page[0])

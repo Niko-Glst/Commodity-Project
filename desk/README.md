@@ -21,7 +21,7 @@ The forecast log only grows, so the track record maps more data every week.
 | 20 Nov 2026 | [gold_report_2026-11-20.pdf](reports/2026-11-20/gold_report_2026-11-20.pdf) | Full report: the 2026 sell-off, macro, flows, past peaks, all tests, 14 number checks ([README](reports/2026-11-20/README.md)) |
 | 20 Nov 2026 | [gold_full_analysis_2026-11-20.pdf](reports/2026-11-20-full/gold_full_analysis_2026-11-20.pdf) | Full analysis: adds where money is going (sectors, fund flows, stress) and what other markets did after each gold peak; 19 number checks ([README](reports/2026-11-20-full/README.md)) |
 | 20 Nov 2026 | [gold_weekly_monitor_2026-11-20.pdf](reports/2026-11-20-weekly/gold_weekly_monitor_2026-11-20.pdf) | Weekly monitor (14 slides, landscape): week to Friday 20 Nov, driver attribution, positioning in tonnes ([README](reports/2026-11-20-weekly/README.md)) |
-| 20 Nov 2026 | [gold_desk_2026-11-20.pdf](reports/2026-11-20/gold_desk_2026-11-20.pdf) | Weekly, Friday close, with the weekend and Sunday open to 22 Nov 23:55 ET; 18 slides in the weekly-monitor layout: desk view, ranges and touch odds, live scorecard (the 13 Nov 1-week range missed at the 0.5th percentile) ([README](reports/2026-11-20/README.md#weekly-desk-note-added-23-nov-2026)) |
+| 20 Nov 2026 | [gold_desk_2026-11-20.pdf](reports/2026-11-20/gold_desk_2026-11-20.pdf) | Weekly, Friday close, with the weekend, Monday's bounce (23 Nov) and the spring test; 22 slides in the weekly-monitor layout: desk view, ranges and touch odds, live scorecard (13 Nov 1-week range missed at the 0.5th percentile, Friday's 1-day range at the 96.8th), further reading ([README](reports/2026-11-20/README.md#weekly-desk-note-added-23-nov-2026)) |
 | 21 Nov 2026 | [gold_annual_review_2026.pdf](reports/2026-annual-review/gold_annual_review_2026.pdf) | Annual review 2026, year to 20 Nov (13 pages, portrait), incl. In Gold We Trust theses checked ([README](reports/2026-annual-review/README.md)) |
 
 Each note has its own folder `reports/<date>/` with the numbers behind it.
@@ -237,6 +237,23 @@ run on real data.
   worse. Only an anchor that passes H6 enters the live forecast; otherwise the spring runs as a shadow.
 - **Descriptive only:** what followed 3-sigma days (sigma from the previous 63 days), and a Kalman-filter
   fit of weekly log gold as a random-walk value plus an AR(1) stretch, which gives the spring's half-life.
+
+**Result (first run, 23 Nov 2026, `reports/2026-11-20/spring.json`): no spring; the model stays at zero drift.**
+
+| Test | 50-day anchor | 200-day anchor |
+|---|---|---|
+| H4 slope of next week on stretch | +0.0013, p 0.56: failed | +0.0045, p 0.83: failed |
+| H5 stiffening term (s times abs(s)) | -0.0073, p 0.036 (needed 0.025): failed | -0.0006, p 0.29: failed |
+| H6 1-month score with the spring | +0.04% (worse), p 0.90: failed | +0.39% (worse), p 0.42: failed |
+
+The slopes are slightly positive: stretched prices drifted on a little, the opposite of a spring. The one
+lead is H5 on the 50-day anchor (negative in both halves): moderate stretches drift on, extreme ones pull
+back. It cannot be re-tested on the same data; a fresh test needs live weeks or a second market such as
+silver. Descriptive: after 55 falls of 3 sigma or more since 2003 the next day was up 50% of the time and
+1.5 times the usual size (volatility clustering, which GARCH has); a month later gold was higher 69% of
+the time against 57% for all days. The Kalman fit gives a stretch half-life of 1.6 weeks and a stretch
+noise of 0.8% a week against 2.4% for the value: most of a big fall is the value moving, and adding the
+spring would move the 1-week centre by about 0.3%.
 
 Backfilled forecasts use only data up to their own date, but today's data
 vintage. Live forecasts record what was known on the day; they are the clean
