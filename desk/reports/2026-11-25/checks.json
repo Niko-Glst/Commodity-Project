@@ -1,0 +1,57 @@
+[
+ {
+  "check": "Every series used has a value on Wed 25 Nov and nothing later (Thanksgiving bar dropped)",
+  "result": "PASS",
+  "detail": "last date 2026-11-25; missing on 25 Nov: none"
+ },
+ {
+  "check": "GC=F is the December contract from 20 to 25 Nov (no roll inside the window)",
+  "result": "PASS",
+  "detail": "GC=F [3515.4, 3651.4, 3561.9, 3535.8] vs GCZ26 [3515.4, 3651.4, 3561.9, 3535.8]"
+ },
+ {
+  "check": "Treasury 10-yr real yield matches FRED DFII10 on every common day since 1 Oct",
+  "result": "PASS",
+  "detail": "max gap 0.000 pp over 37 days"
+ },
+ {
+  "check": "GLD market price moves with COMEX gold (weekly correlation since 2025 above 0.95)",
+  "result": "PASS",
+  "detail": "price 0.980; NAV 0.922 (NAV struck at 10:00 New York)"
+ },
+ {
+  "check": "GLD daily NAV change matches the 10:00 ET December bar on 23-25 Nov (within 0.5 pp)",
+  "result": "PASS",
+  "detail": "gaps [0.02, 0.33, 0.31] pp"
+ },
+ {
+  "check": "ICI money funds: institutional + retail = total",
+  "result": "PASS",
+  "detail": "max gap 1.0 $m"
+ },
+ {
+  "check": "Rebuilt 20 Nov paths reproduce the stored 1-day and 1-week quantile grids",
+  "result": "PASS",
+  "detail": "max gap $0.005"
+ },
+ {
+  "check": "The partial week in the panel runs from Fri 20 to Wed 25 Nov",
+  "result": "PASS",
+  "detail": "r_gold 0.00579"
+ },
+ {
+  "check": "2026 cycle path runs Feb to Nov (10 months)",
+  "result": "PASS",
+  "detail": "10 months"
+ },
+ {
+  "check": "5-minute December bars agree with the daily settlements on Mon and Tue at 13:30 ET",
+  "result": "PASS",
+  "detail": "[3651.5, 3562.4]"
+ },
+ {
+  "check": "store/live.jsonl unchanged by this script (no forecast logged)",
+  "result": "PASS",
+  "detail": "sha256 3011a7a847e3b782"
+ }
+]
