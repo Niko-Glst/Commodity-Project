@@ -5,8 +5,8 @@
   "to": "GCG27 (February 2027)",
   "ratio": 0.991921,
   "ratio_basis": "GCZ26 / GCG27 settlements on 25 Nov 2026: 3535.8 / 3564.6",
-  "how_found": "Yahoo GC=F daily equals GCZ26 through 25 Nov and matches GCG27 on 26 Nov (3596.2 vs 3595.2 and 3595.9 vs 3596.2 in two fetches), data fetched 26 Nov 2026 about 19:00 ET",
-  "verified": false,
-  "note": "26 Nov was Thanksgiving (Globex only, no settlement). Confirm the switch on the 27 Nov settlement before relying on it."
+  "how_found": "Yahoo GC=F daily equals GCZ26 through 25 Nov and matches GCG27 on 26 Nov (Globex, fetched 26 Nov). Confirmed on the 27 Nov settlement (fetched 27 Nov 19:32 ET): GC=F 3668.5 = GCG27 3668.5, GCZ26 3639.6.",
+  "verified": true,
+  "note": "26 Nov was Thanksgiving (Globex only, no settlement); the first settlement on the February contract is 27 Nov."
  }
 ]

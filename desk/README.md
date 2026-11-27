@@ -262,7 +262,7 @@ out-of-sample record.
 
 ## Nova Gold Weekly modules (added 27 Nov 2026)
 
-- `gold_desk/rolls.py` + `rolls.json`: futures rolls in Yahoo's continuous GC=F. `score(records, gold, rolls)` converts outcomes after a roll to the forecast's contract. `rolls=None` keeps the old behaviour; `__main__` and `report.py` pass `load_rolls()`. The 26 Nov 2026 roll is marked unverified until the 27 Nov settlement, and unverified rolls are skipped. Rolls in the backfill are not adjusted, and the fit's returns still contain roll jumps.
+- `gold_desk/rolls.py` + `rolls.json`: futures rolls in Yahoo's continuous GC=F. `score(records, gold, rolls)` converts outcomes after a roll to the forecast's contract. `rolls=None` keeps the old behaviour; `__main__` and `report.py` pass `load_rolls()`. The 26 Nov 2026 roll was confirmed on the 27 Nov settlement; unverified rolls are skipped. Rolls in the backfill are not adjusted, and the fit's returns still contain roll jumps.
 - `gold_desk/cycles.py`: 20/20 bear markets on monthly averages, "rise before" from the trough of the preceding bear market, and the trailing real rate (10-yr minus CPI y/y) with the TIPS yield alongside.
 - `gold_desk/model.py`: `filter_variance` carries a fit's variance through later returns without re-estimating. `exceed_odds` gives the share of days with a move larger than x, and the chance of at least one such day.
 - `gold_desk/drivers.py`: `MARKET_FACTORS` (no ETF flows or positioning, which follow the price) for the attribution in the weekly.
