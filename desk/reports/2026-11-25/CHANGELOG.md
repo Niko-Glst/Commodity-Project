@@ -76,10 +76,10 @@ This file records the revision of `gold_desk_2026-11-25.pdf` (16 pages, commit 4
 ## 3. Not fixed or not verified
 
 - **GLD and GLDM official ounces per share:** not verified. SPDR's archive URL returns a PDF, not a CSV, and no PDF reader is installed; the GLDM archive returns 404. The tonnes use an estimate (NAV / December futures at 10:00 ET) and are labelled "est.".
-- **Roll date 26 Nov:** unverified. It was taken from Yahoo data fetched on 26 Nov and must be confirmed on the 27 Nov settlement (`rolls.json`, `"verified": false`).
+- **Roll date 26 Nov:** unverified when the note was made. Confirmed on 27 Nov at 19:32 ET: GC=F settled at 3668.5, the February contract, against 3639.6 for December. `rolls.json` is now `"verified": true`.
 - **Rolls in the 2006-2026 backfill:** not adjusted, a known limitation. Each week that crosses a roll scores on a jump of about 0.3-0.8%.
 - **Model inputs:** the GARCH fit's daily returns still include each roll jump. On 26 Nov that is about +0.8%, and the 27 Nov record will be fitted on it, with spot on the February contract. This is a known limitation, not fixed in this revision.
-- **Unverified roll:** until `rolls.json` is confirmed on the 27 Nov settlement, `load_rolls()` skips it, so the 30 Nov and 1 Dec scores would not be roll-adjusted.
+- **Unverified roll:** resolved on 27 Nov. The roll is confirmed, so the 30 Nov and 1 Dec scores will be roll-adjusted.
 - **Physical market:** the Shanghai premium and COMEX-London EFP are not wired yet; the page shows placeholders.
 - **Primary documents:** the Nvidia 8-K, Nvidia's press release and S&P's CreditWatch notice were seen as search results that list the primary documents. The documents themselves were not opened.
 - **Fed odds:** the 94.4% figure is relayed by CoinCentral, not pulled from CME FedWatch directly.

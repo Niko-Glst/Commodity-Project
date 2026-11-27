@@ -377,3 +377,11 @@ def test_nova_deck_embeds_fonts_and_counts_blue_blocks(tmp_path):
     ok, detail = fonts_embedded(tmp_path / "t.pdf")
     assert ok, detail
     assert d.blue_blocks == 1 and "one point" in d.texts
+
+
+def test_confirmed_roll_file_adjusts_a_pair_that_crosses_26_nov():
+    from gold_desk.rolls import load_rolls, outcome_factor
+    rolls = load_rolls()
+    assert any(r["date"] == "2026-11-26" and r["verified"] for r in rolls)
+    assert outcome_factor("2026-11-20", "2026-11-30", rolls) == pytest.approx(3535.8 / 3564.6, abs=1e-5)
+    assert outcome_factor("2026-11-20", "2026-11-25", rolls) == 1.0
