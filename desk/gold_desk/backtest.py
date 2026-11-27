@@ -16,6 +16,7 @@ import pandas as pd
 from scipy import stats
 
 from .model import GRID_Q, HORIZONS
+from .rolls import crossed, outcome_factor
 
 
 def origin_position(index: pd.DatetimeIndex, origin: pd.Timestamp) -> int | None:
@@ -23,7 +24,9 @@ def origin_position(index: pd.DatetimeIndex, origin: pd.Timestamp) -> int | None
     return int(pos) if pos >= 0 and index[pos] == origin else None
 
 
-def score(records: list[dict], gold: pd.Series) -> pd.DataFrame:
+def score(records: list[dict], gold: pd.Series, rolls: list[dict] | None = None) -> pd.DataFrame:
+    """rolls=None (default) scores on the continuous series as before; pass rolls.load_rolls() so an outcome after
+    a futures roll is expressed in the contract the forecast was made on."""
     rows = []
     for rec in records:
         origin = pd.Timestamp(rec["origin"])
@@ -33,7 +36,8 @@ def score(records: list[dict], gold: pd.Series) -> pd.DataFrame:
         for h in HORIZONS:
             if pos + h >= len(gold):
                 continue
-            realised = float(gold.iloc[pos + h])
+            when = gold.index[pos + h]
+            realised = float(gold.iloc[pos + h]) * outcome_factor(origin, when, rolls)
             grid = np.asarray(rec["grid"][str(h)])
             rows.append({
                 "origin": origin,
@@ -47,6 +51,7 @@ def score(records: list[dict], gold: pd.Series) -> pd.DataFrame:
                 "pit": float(np.interp(realised, grid, GRID_Q / 100, left=0.005, right=0.995)),
                 "below5": realised < grid[4],
                 "above95": realised > grid[94],
+                "roll_adjusted": bool(crossed(origin, when, rolls)),
             })
     df = pd.DataFrame(rows)
     if len(df):

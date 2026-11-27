@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from .rolls import load_rolls
 from . import data, store
 from .backtest import coverage, score
 from .model import N_PATHS, make_forecast
@@ -35,7 +36,7 @@ def cmd_forecast(args) -> None:
     fc, _ = make_forecast(gold, source="live")
     store.upsert_live(fc.to_record())
     records = store.read_records()
-    scores = score(records, gold)
+    scores = score(records, gold, load_rolls())
     origin = f"{fc.origin:%Y-%m-%d}"
     out = REPORTS / origin
     out.mkdir(parents=True, exist_ok=True)
@@ -117,7 +118,7 @@ def cmd_iv_check(args) -> None:
 def cmd_score(args) -> None:
     prices = data.load(refresh=False)
     records = store.read_records()
-    scores = score(records, data.gold(prices))
+    scores = score(records, data.gold(prices), load_rolls())
     with pd.option_context("display.width", 120, "display.float_format", "{:.3f}".format):
         print(coverage(scores, scores["origin"].max()).to_string(index=False))
 

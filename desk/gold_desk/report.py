@@ -32,6 +32,7 @@ from reportlab.platypus import (  # noqa: E402
     TableStyle,
 )
 
+from .rolls import load_rolls  # noqa: E402
 from .backtest import score  # noqa: E402
 from .data import GOLD  # noqa: E402
 from .model import Forecast, touch_probabilities  # noqa: E402
@@ -191,7 +192,7 @@ def build_pdf(origin: str, report_dir: Path, prices: pd.DataFrame, records: list
     fc = Forecast.from_record(by_origin[origin])
     earlier = [r for r in records if r["origin"] < origin]
     prev = Forecast.from_record(earlier[-1]) if earlier else None
-    scores = score(records, gold)
+    scores = score(records, gold, load_rolls())
     levels = news.get("levels", [])
     tmp = report_dir / "_charts"
     tmp.mkdir(exist_ok=True)
