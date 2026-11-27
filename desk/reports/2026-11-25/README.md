@@ -1,11 +1,11 @@
-# Holiday-week note, to Wednesday 25 Nov 2026
+# Nova Gold Weekly, edition 25 Nov 2026 (holiday week, to the Wednesday close)
 
 Thanksgiving week: Thursday 26 Nov was a holiday and Friday 27 Nov a half day, so this note uses the Wednesday 25 Nov close, the last full session (after the October PCE, Q3 GDP and the Beige Book). It is a holiday-week note, not a weekly record: no forecast is logged, and the 27 Nov close is logged as the weekly record. The user asked for ETF and equity movement, the gold narratives (hawkish Fed and others) and gold's past cycles.
 
-- `gold_desk_2026-11-25.pdf`: the note (16 landscape slides, weekly-monitor layout of `reference/`, own branding)
-- `week.json`: every number in the note; `checks.json`: 11 cross-checks, all PASS
+- `nova_gold_weekly_2026-11-25.pdf`: the Nova Gold Weekly (12 pages, the desk's teal slide style (structure from the internal Nova blueprint, which is not in the repo; previous look); internal: analysts and board). It replaces the 16-page `gold_desk_2026-11-25.pdf` (commit 415ee15); every change is in `CHANGELOG.md`
+- `week.json`: every number in the note; `checks.json`: 17 data checks and 7 render checks, all PASS
 - `data/`: snapshot (Yahoo daily prices to 26 Nov, cut at 25 Nov in the scripts; 5-minute GC=F and per-contract December/February bars; FRED; Treasury par real yield curve 2026; CFTC to 17 Nov; State Street NAV history for GLD, GLDM, SPY, XLK, XLU, XLP, BIL; ICI money funds to 24 Nov; datahub monthly gold), `fetch_log.json`
-- `scripts/`: `fetch_week.py <dir>/data` -> `analyse_week.py` -> `build_note.py` (set `DESK_NOTE_OUT` to render elsewhere), run from `desk/`
+- `scripts/`: `fetch_week.py <dir>/data` -> `analyse_week.py` -> `build_note.py` (set `DESK_NOTE_OUT` to render elsewhere; uses `gold_desk/nova_style.py`, Windows fonts), run from `desk/`
 
 Points to know:
 

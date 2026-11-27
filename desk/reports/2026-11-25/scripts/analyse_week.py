@@ -249,10 +249,192 @@ check("5-minute December bars agree with the daily settlements on Mon and Tue at
       all(abs(float(i5.loc[:f"{d.date()} 13:30"].iloc[-1]) - float(gold.loc[d])) < 3 for d in DAYS[:2]),
       str([round(float(i5.loc[:f"{d.date()} 13:30"].iloc[-1]), 1) for d in DAYS[:2]]))
 
+
+# ================================================================== Nova revision (27 Nov 2026)
+from scipy import stats  # noqa: E402
+
+from gold_desk.backtest import score as _score  # noqa: E402
+from gold_desk.cycles import bear_markets, rise_before, tips_monthly, trailing_real_rate  # noqa: E402
+from gold_desk.model import exceed_odds, filter_variance  # noqa: E402
+from gold_desk.rolls import load_rolls  # noqa: E402
+
+nova = {}
+DRV_W = json.loads((DESK / "reports" / "2026-11-20-weekly" / "drivers.json").read_text(encoding="utf-8"))["week"]
+CY_PATH26 = path26[-1]
+
+# --- B1: gold at 16:00 ET (bar at or before 16:00), December contract throughout --------------------------------
+g5 = pd.read_csv(D / "gold_5m.csv", index_col=0)
+g5.index = pd.to_datetime(g5.index, utc=True).tz_convert("America/New_York").tz_localize(None)
+g5 = g5["Close"].dropna()
+cz = pd.read_csv(D / "gold_contracts_daily.csv", index_col=0, parse_dates=True)
+DAYS16 = [d for d in daily.loc["2026-11-16":CUT].index if pd.notna(daily.loc[d, "^GSPC"])]
+
+
+def bar_at(s, d, hhmm):
+    x = s.loc[f"{d.date()} 00:00":f"{d.date()} {hhmm}"]
+    return float(x.iloc[-1]) if len(x) else np.nan
+
+
+ident = []
+for d in DAYS16:
+    if d < CUT:            # contract identity: the 13:30 bar is nearer the December settlement than the February one
+        b13 = bar_at(g5, d, "13:30")
+        ident.append((abs(b13 - float(cz.loc[d, "GCZ26.CMX"])), abs(b13 - float(cz.loc[d, "GCG27.CMX"]))))
+check("GC=F 5-minute bars are the December contract on every day 16-24 Nov (13:30 bar nearer GCZ26 than GCG27)",
+      all(z < g_ for z, g_ in ident), f"gap to Dec max ${max(z for z, _ in ident):.2f}; to Feb min ${min(g_ for _, g_ in ident):.2f}; {len(ident)} days")
+gold16 = {}
+for d in DAYS16:
+    gold16[d] = bar_at(i5, d, "16:00") if d == CUT else bar_at(g5, d, "16:00")
+ov = [abs(bar_at(g5, d, "16:00") - bar_at(i5, d, "16:00")) for d in DAYS16 if FRI <= d < CUT]
+check("16:00 gold from GC=F 5-minute equals the GCZ26 bars where both exist (20-24 Nov)", max(ov) < 1.0, f"max gap ${max(ov):.2f}")
+check("Gold at 16:00 ET present for every trading day of the week (Fri 20 to Wed 25)",
+      all(np.isfinite(gold16.get(d, np.nan)) for d in [FRI] + DAYS), str({str(d.date()): round(gold16[d], 1) for d in [FRI] + DAYS}))
+spx = daily["^GSPC"]
+matched = []
+for a, b in zip(DAYS16[:-1], DAYS16[1:]):
+    rg, rs = gold16[b] / gold16[a] - 1, float(spx.loc[b] / spx.loc[a] - 1)
+    matched.append({"date": str(b.date()), "gold16": gold16[b], "gold_chg": rg, "spx_chg": rs,
+                    "settle_chg": float(gold.loc[b] / gold.loc[a] - 1), "gold_up_stocks_down": bool(rg > 0 and rs < 0)})
+nova["gold16"] = {str(k.date()): v for k, v in gold16.items()}
+nova["matched"] = matched
+nova["gold16_wtd"] = gold16[CUT] / gold16[FRI] - 1
+nova["miners16"] = {t: float(daily.loc[CUT, t] / daily.loc[FRI, t] - 1) for t in ("GDX", "GDXJ", "^GSPC")}
+
+# --- A8: odds of big days to 9 Dec, the 20 Nov fit carried through Mon-Wed (no re-estimation) -------------------
+r_mw = np.log(gold.loc[FRI:CUT]).diff().dropna().values
+f_carry = filter_variance(f20, r_mw)
+n9 = len(pd.bdate_range(CUT + pd.Timedelta(days=1), "2026-12-09").difference(pd.DatetimeIndex(["2026-11-26"])))
+nova["odds"] = {"days": n9, "vol_next": f_carry.vol_next, "daily_sigma": float(np.sqrt(f_carry.var_next)),
+                "x2": exceed_odds(f_carry, 0.02, n9), "x4": exceed_odds(f_carry, 0.04, n9)}
+
+# --- B4: binomial context for the live record --------------------------------------------------------------------
+nova["binom_2of6"] = float(1 - stats.binom.cdf(1, 6, 0.10))
+
+# --- B2: attribution on market prices only (no ETF flows, no positioning) ----------------------------------------
+pm = DR.weekly_panel(frame, NAVS["GLD"][["nav", "shares"]])
+pf = pm.loc[:FRI]
+att_oos = DR.attribution(pf, factors=DR.MARKET_FACTORS)
+last = att_oos.loc[FRI]
+# one definition for both weeks: unexplained = gold minus the factor contributions (the intercept stays in it)
+nova["attr_last"] = {"r_gold": float(last["r_gold"]), "residual": float(last["r_gold"] - sum(last[f"c_{f}"] for f in DR.MARKET_FACTORS)),
+                     "alpha": float(last["alpha"]),
+                     "contrib": {f: float(last[f"c_{f}"]) for f in DR.MARKET_FACTORS}}
+nova["attr_last_old"] = {"r_gold": DRV_W["r_gold"], "residual": DRV_W["residual"] + DRV_W["alpha"], "spx": DRV_W["r_spx"],
+                         "flow": DRV_W["flow"], "d_mm": DRV_W["d_mm"]}
+nova["explained_oos"] = float(DR.explained_share(att_oos.loc["2009-01-01":]))
+nova["explained_2026"] = float(DR.explained_share(att_oos.loc["2026-01-01":]))
+nova["oos_first"] = str(att_oos.index[0].date())
+past = pm.loc[:FRI, ["r_gold"] + DR.MARKET_FACTORS].dropna().iloc[-156:]
+Xm = np.column_stack([np.ones(len(past)), past[DR.MARKET_FACTORS].values])
+bm = np.linalg.lstsq(Xm, past["r_gold"].values, rcond=None)[0]
+xw2 = pm.iloc[-1]
+r16 = float(np.log(gold16[CUT] / gold16[FRI]))
+c_now = {f: float(b * xw2[f]) for f, b in zip(DR.MARKET_FACTORS, bm[1:])}
+nova["attr_now"] = {"r_gold16": r16, "r_gold_settle": float(xw2["r_gold"]), "contrib": c_now,
+                    "residual": r16 - sum(c_now.values()), "flow_contemporaneous": float(xw2["flow"]),
+                    "window": [str(past.index[0].date()), str(past.index[-1].date())]}
+
+# --- B3: contract consistency of every scored live pair -----------------------------------------------------------
+ROLLS = load_rolls()
+gold_c = gold.loc["2026-10-01":CUT]
+same = np.allclose(gold_c.values, cz.reindex(gold_c.index)["GCZ26.CMX"].values, atol=0.05)
+sc_live = _score(recs, gold, ROLLS)
+crossing_ok = bool((sc_live["roll_adjusted"] == False).all())  # noqa: E712  (no outcome after 26 Nov in this data)
+check("Every scored live forecast and its outcome use the same contract (December since 1 Oct; no roll crossed)",
+      bool(same and crossing_ok), f"GC=F == GCZ26 1 Oct-25 Nov: {same}; roll-adjusted pairs: {int(sc_live['roll_adjusted'].sum())}")
+base = _score(recs, gold)
+check("Passing the rolls file leaves every existing score unchanged (no pair crosses 26 Nov yet)",
+      bool(np.allclose(base["realised"], sc_live["realised"])), f"{len(base)} scored pairs")
+nova["rolls"] = ROLLS
+
+# --- B7: GLD and GLDM ounces per share from NAV / the 10:00 ET December bar (the NAV's own timing) ---------------
+oz_t = {}
+for t in ("GLD", "GLDM"):
+    g = NAVS[t]
+    ratios = [float(g.nav.loc[d] / (bar_at(i5, d, "10:00") if d == CUT else bar_at(g5, d, "10:00"))) for d in DAYS16 if d in g.index]
+    ozs = float(np.median(ratios))
+    oz_t[t] = {"oz_per_share": ozs, "spread": float(max(ratios) / min(ratios) - 1), "tonnes": float(g.shares.iloc[-1] * ozs / OZ_PER_T),
+               "tonnes_fri": float(g.shares.loc[:FRI].iloc[-1] * ozs / OZ_PER_T), "old_tonnes": flows[t]["tonnes"]}
+nova["oz"] = oz_t
+
+# --- B6: the dollar claim against our own data -------------------------------------------------------------------
+dxy = daily["DX-Y.NYB"].dropna()
+mon = DAYS[0]
+higher = dxy.loc[:mon - pd.Timedelta(days=1)]
+prev_hi = higher[higher >= dxy.loc[mon]]
+nova["dxy_mon"] = {"close": float(dxy.loc[mon]), "highest_since": str(prev_hi.index[-1].date()) if len(prev_hi) else None,
+                   "months": float((mon - prev_hi.index[-1]).days / 30.44) if len(prev_hi) else None}
+
+# --- C5: z-scores for the performance table and technicals ------------------------------------------------------
+zrows = {}
+for r_ in perf:
+    t = r_["ticker"]
+    s = real10 if t == "real10" else (fred["DGS2"].dropna() if t == "DGS2" else daily[t].dropna())
+    wk = s.resample("W-FRI").last().dropna().loc[:FRI]
+    chg = wk.diff() * 100 if r_.get("unit") == "bp" else np.log(wk).diff()
+    sd = float(chg.iloc[-52:].std() * np.sqrt(3 / 5))
+    move = r_["wtd"] if r_.get("unit") == "bp" else np.log(1 + r_["wtd"])
+    zrows[t] = float(move / sd)
+nova["z"] = zrows
+
+
+def rsi(x, n):
+    d_ = x.diff()
+    up, dn = d_.clip(lower=0).ewm(alpha=1 / n, adjust=False).mean(), (-d_.clip(upper=0)).ewm(alpha=1 / n, adjust=False).mean()
+    return float(100 - 100 / (1 + up.iloc[-1] / dn.iloc[-1]))
+
+
+g_all = gold
+last_px = float(g_all.iloc[-1])
+wk_lo = float(i5.loc["2026-11-23":"2026-11-25 17:00"].min())
+wk_hi = float(max(i5.loc["2026-11-22 18:00":"2026-11-25 17:00"].max(), g5.loc["2026-11-22 18:00":"2026-11-24 17:00"].max()))
+below = g_all[g_all < wk_lo]
+tech = {"sma55": float(g_all.iloc[-55:].mean()), "sma200": float(g_all.iloc[-200:].mean()), "rsi14": rsi(g_all, 14),
+        "rsi9w": rsi(g_all.resample("W-FRI").last().dropna(), 9), "wk_low": wk_lo, "wk_high": wk_hi,
+        "low_12m": float(g_all.iloc[-252:].min()), "low_12m_date": str(g_all.iloc[-252:].idxmin().date()),
+        "high_3m": float(g_all.iloc[-63:].max()), "low_3m": float(g_all.iloc[-63:].min()),
+        "last_below_wk_low": str(below.index[-1].date()) if len(below) else None,
+        "last_below_wk_low_px": float(below.iloc[-1]) if len(below) else None}
+nova["tech"] = tech
+
+# --- A4/A5: cycles with fixed definitions (gold_desk/cycles.py) --------------------------------------------------
+C19 = DESK / "reports" / "2026-11-19-cycles" / "data"
+hm = pd.read_csv(C19 / "gold_monthly_datahub.csv")
+hm = pd.Series(hm.Price.values, index=pd.PeriodIndex(hm.Date, freq="M"))
+mser = pd.concat([hm.loc["1970-01":"2026-10"], pd.Series([nov_mtd], index=pd.PeriodIndex(["2026-11"], freq="M"))])
+fm = pd.read_csv(C19 / "fred_monthly.csv", index_col=0, parse_dates=True)
+fm.index = fm.index.to_period("M")
+trr = trailing_real_rate(fm["GS10"], fm["CPIAUCSL"])
+tpm = tips_monthly(fred["DFII10"])
+bears = bear_markets(mser.loc["1974-01":])
+old = {p_["peak"]: p_ for p_ in peaks}
+cyc_rows = []
+for rb, (pk, tr_) in zip(rise_before(mser, bears, "1970-01"), bears):
+    k = str(pk)
+    path = (mser.loc[pk:] / mser.loc[pk] - 1)
+    cyc_rows.append({"peak": k, "from": str(rb["from"]), "rise": rb["rise"], "old_rise": old[k]["runup_pct"], "trough": str(tr_),
+                     "fall": float(mser.loc[tr_] / mser.loc[pk] - 1), "months_to_low": int((tr_ - pk).n),
+                     "years_to_regain": (old[k]["months_to_regain"] / 12) if old[k].get("months_to_regain") else None,
+                     "trailing_rr": float(trr.loc[pk]), "tips": float(tpm.loc[pk]) if pk in tpm.index else None,
+                     "at9": float(path.iloc[9]) if len(path) > 9 else None})
+ind = [r_ for r_ in cyc_rows if r_["peak"] not in ("1980-09", "2026-02")]
+r80 = [r_ for r_ in cyc_rows if r_["peak"] == "1980-01"][0]
+r80b = [r_ for r_ in cyc_rows if r_["peak"] == "1980-09"][0]
+r80.update({"fall_combined": float(mser.loc[pd.Period(r80b["trough"], "M")] / mser.loc[pd.Period("1980-01", "M")] - 1),
+            "months_combined": int((pd.Period(r80b["trough"], "M") - pd.Period("1980-01", "M")).n)})
+falls7 = [r80["fall_combined"] if r_["peak"] == "1980-01" else r_["fall"] for r_ in ind]
+months7 = [r80["months_combined"] if r_["peak"] == "1980-01" else r_["months_to_low"] for r_ in ind]
+at9_7 = [r_["at9"] for r_ in ind]
+nova["cycles"] = {"rows": cyc_rows, "n_independent": len(ind), "falls7": falls7, "months7": months7, "at9_7": at9_7,
+                  "median_fall7": float(np.median(falls7)), "rank9": int(sum(a < CY_PATH26 for a in at9_7)),
+                  "cpi_gap_note": "October 2025 CPI interpolated; it enters no peak value (it only affects Oct 2025-Oct 2026 12-month changes)"}
+check("Cycle detection on the fixed definitions finds the same nine peaks as the 19 Nov note",
+      [r_["peak"] for r_ in cyc_rows] == [p_["peak"] for p_ in peaks], str([r_["peak"] for r_ in cyc_rows]))
+
 out = {"cut": str(CUT.date()), "gold": {"fri": float(gold.loc[FRI]), "close": float(gold.iloc[-1]), "wtd": g_wtd, "ytd": g_ytd,
        "prev_week": float(gold.loc[FRI] / gold.loc[PREV] - 1), "roll_gap": roll_gap},
        "days": days, "perf": perf, "miners": miners, "flows": flows, "mmf": mm, "pit20": pit20, "rebuilt_gap": rebuilt,
-       "shadow": shadow, "attr": attr, "cycles": cycles, "cot": cot, "vol": vol, "intraday": intraday}
+       "shadow": shadow, "attr": attr, "cycles": cycles, "cot": cot, "vol": vol, "intraday": intraday, "nova": nova}
 (N / "week.json").write_text(json.dumps(out, indent=1, default=float), encoding="utf-8")
 sha_after = hashlib.sha256(LIVE.read_bytes()).hexdigest()
 check("store/live.jsonl unchanged by this script (no forecast logged)", sha_after == SHA_BEFORE, f"sha256 {sha_after[:16]}")
