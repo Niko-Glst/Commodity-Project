@@ -23,7 +23,7 @@ The forecast log only grows, so the track record maps more data every week.
 | 20 Nov 2026 | [gold_weekly_monitor_2026-11-20.pdf](reports/2026-11-20-weekly/gold_weekly_monitor_2026-11-20.pdf) | Weekly monitor (14 slides, landscape): week to Friday 20 Nov, driver attribution, positioning in tonnes ([README](reports/2026-11-20-weekly/README.md)) |
 | 20 Nov 2026 | [gold_desk_2026-11-20.pdf](reports/2026-11-20/gold_desk_2026-11-20.pdf) | Weekly, Friday close, with the weekend, Monday's bounce (23 Nov) and the spring test; 22 slides in the weekly-monitor layout: desk view, ranges and touch odds, live scorecard (13 Nov 1-week range missed at the 0.5th percentile, Friday's 1-day range at the 96.8th), further reading ([README](reports/2026-11-20/README.md#weekly-desk-note-added-23-nov-2026)) |
 | 21 Nov 2026 | [gold_annual_review_2026.pdf](reports/2026-annual-review/gold_annual_review_2026.pdf) | Annual review 2026, year to 20 Nov (13 pages, portrait), incl. In Gold We Trust theses checked ([README](reports/2026-annual-review/README.md)) |
-| 25 Nov 2026 | [gold_desk_2026-11-25.pdf](reports/2026-11-25/gold_desk_2026-11-25.pdf) | Holiday-week note, Wednesday 25 Nov close; no forecast logged; the 27 Nov close is logged as the weekly record. 16 slides: ETF and equity flows, bear and bull narratives against our tests, the Fed in numbers, past gold cycles, 11 number checks ([README](reports/2026-11-25/README.md)) |
+| 25 Nov 2026 | [nova_gold_weekly_2026-11-25.pdf](reports/2026-11-25/nova_gold_weekly_2026-11-25.pdf) | Nova Gold Weekly (internal), holiday-week edition, Wednesday 25 Nov close; no forecast logged; the 27 Nov close is logged as the weekly record. 12 pages, revised after review on 27 Nov (previous teal look kept) ([CHANGELOG](reports/2026-11-25/CHANGELOG.md), [README](reports/2026-11-25/README.md)) |
 
 Each note has its own folder `reports/<date>/` with the numbers behind it.
 Weekly notes add a row here; one-off notes also carry their data snapshot and
@@ -259,3 +259,11 @@ spring would move the 1-week centre by about 0.3%.
 Backfilled forecasts use only data up to their own date, but today's data
 vintage. Live forecasts record what was known on the day; they are the clean
 out-of-sample record.
+
+## Nova Gold Weekly modules (added 27 Nov 2026)
+
+- `gold_desk/rolls.py` + `rolls.json`: futures rolls in Yahoo's continuous GC=F. `score(records, gold, rolls)` converts outcomes after a roll to the forecast's contract. `rolls=None` keeps the old behaviour; `__main__` and `report.py` pass `load_rolls()`. The 26 Nov 2026 roll is marked unverified until the 27 Nov settlement, and unverified rolls are skipped. Rolls in the backfill are not adjusted, and the fit's returns still contain roll jumps.
+- `gold_desk/cycles.py`: 20/20 bear markets on monthly averages, "rise before" from the trough of the preceding bear market, and the trailing real rate (10-yr minus CPI y/y) with the TIPS yield alongside.
+- `gold_desk/model.py`: `filter_variance` carries a fit's variance through later returns without re-estimating. `exceed_odds` gives the share of days with a move larger than x, and the chance of at least one such day.
+- `gold_desk/drivers.py`: `MARKET_FACTORS` (no ETF flows or positioning, which follow the price) for the attribution in the weekly.
+- `gold_desk/nova_style.py`: the page template for the weekly in the desk's teal style (Segoe UI, Windows only; never imported by the routine). It records all text for the render checks.

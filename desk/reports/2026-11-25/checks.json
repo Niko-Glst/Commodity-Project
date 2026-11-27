@@ -50,8 +50,80 @@
   "detail": "[3651.5, 3562.4]"
  },
  {
+  "check": "GC=F 5-minute bars are the December contract on every day 16-24 Nov (13:30 bar nearer GCZ26 than GCG27)",
+  "result": "PASS",
+  "detail": "gap to Dec max $3.00; to Feb min $26.50; 7 days"
+ },
+ {
+  "check": "16:00 gold from GC=F 5-minute equals the GCZ26 bars where both exist (20-24 Nov)",
+  "result": "PASS",
+  "detail": "max gap $0.00"
+ },
+ {
+  "check": "Gold at 16:00 ET present for every trading day of the week (Fri 20 to Wed 25)",
+  "result": "PASS",
+  "detail": "{'2026-11-20': 3525.6, '2026-11-23': 3635.2, '2026-11-24': 3549.6, '2026-11-25': 3569.2}"
+ },
+ {
+  "check": "Every scored live forecast and its outcome use the same contract (December since 1 Oct; no roll crossed)",
+  "result": "PASS",
+  "detail": "GC=F == GCZ26 1 Oct-25 Nov: True; roll-adjusted pairs: 0"
+ },
+ {
+  "check": "Passing the rolls file leaves every existing score unchanged (no pair crosses 26 Nov yet)",
+  "result": "PASS",
+  "detail": "6 scored pairs"
+ },
+ {
+  "check": "Cycle detection on the fixed definitions finds the same nine peaks as the 19 Nov note",
+  "result": "PASS",
+  "detail": "['1974-12', '1980-01', '1980-09', '1983-02', '1987-12', '1996-02', '2008-03', '2011-09', '2026-02']"
+ },
+ {
   "check": "store/live.jsonl unchanged by this script (no forecast logged)",
   "result": "PASS",
   "detail": "sha256 3011a7a847e3b782"
+ },
+ {
+  "check": "No em dash or en dash used as a dash in any page or chart text",
+  "result": "PASS",
+  "detail": "offending: none; strings checked: 879",
+  "render": true
+ },
+ {
+  "check": "Exactly one key block (the desk view)",
+  "result": "PASS",
+  "detail": "blue blocks: 1",
+  "render": true
+ },
+ {
+  "check": "Every chart has a takeaway title and a subtitle",
+  "result": "PASS",
+  "detail": "charts: 7",
+  "render": true
+ },
+ {
+  "check": "Units column filled for every row of the performance table",
+  "result": "PASS",
+  "detail": "all rows have a unit",
+  "render": true
+ },
+ {
+  "check": "All fonts embedded in the PDF",
+  "result": "PASS",
+  "detail": "standard-14 fonts: none; embedded font files: 4; base fonts: 4",
+  "render": true
+ },
+ {
+  "check": "No table mixes settlement and 16:00 ET gold prices",
+  "result": "PASS",
+  "detail": "tables: 21; 16:00 tables: 1",
+  "render": true
+ },
+ {
+  "check": "12 pages or fewer",
+  "result": "PASS",
+  "detail": "pages: 12",
+  "render": true
  }
 ]
