@@ -31,6 +31,10 @@ from scipy import stats
 FACTORS = {"d_real": "Real yield (10y TIPS)", "d_be": "Inflation expectations (10y breakeven)",
            "r_dxy": "US dollar", "d_vix": "Risk and stress (VIX)", "r_spx": "US stocks", "r_oil": "Oil",
            "d_mm": "Speculative positioning", "flow": "ETF flows"}
+# Factors for the attribution shown in the Nova Gold Weekly (27 Nov 2026): market prices only. ETF flows and
+# managed-money positioning are left out because both follow the price (H2 for flows; managed money is trend-
+# following), so as regressors they are endogenous and bias the other betas.
+MARKET_FACTORS = ["d_real", "d_be", "r_dxy", "d_vix", "r_spx", "r_oil"]
 ATTR_WINDOW = 156                       # weeks of past data behind each week's betas (3 years)
 DECOUPLE_BEFORE = ("2010-01-01", "2021-12-31")
 DECOUPLE_AFTER = "2022-03-01"           # reserve freeze after the invasion of Ukraine

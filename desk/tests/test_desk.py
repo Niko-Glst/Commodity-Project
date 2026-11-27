@@ -268,3 +268,112 @@ def test_big_moves_use_past_volatility_only():
     assert gold.index[400] in set(ev["date"])
     row = ev.set_index("date").loc[gold.index[400]]
     assert row["z"] < -3 and np.isclose(row["sigma"], np.log(gold).diff().iloc[337:400].std())
+
+
+# ------------------------------------------------------------------ cycles and daily move odds (27 Nov 2026)
+
+def test_rise_before_starts_at_the_preceding_bear_market_trough():
+    from gold_desk.cycles import bear_markets, rise_before
+    idx = pd.period_range("1990-01", periods=9, freq="M")
+    s = pd.Series([100, 200, 150, 140, 180, 200, 210, 150, 160], index=idx)
+    bears = bear_markets(s)
+    assert [(str(p), str(t)) for p, t in bears] == [("1990-02", "1990-04"), ("1990-07", "1990-08")]
+    rows = rise_before(s, bears, "1990-01")
+    assert rows[0]["rise"] == pytest.approx(1.0)              # first peak: from the low since base_start (100 -> 200)
+    assert rows[1]["rise"] == pytest.approx(210 / 140 - 1)    # second: from the first bear market's trough, not the window low
+    assert str(rows[1]["from"]) == "1990-04"
+
+
+def test_trailing_real_rate_interpolates_a_missing_cpi_month():
+    from gold_desk.cycles import trailing_real_rate
+    idx = pd.period_range("2024-01", periods=15, freq="M")
+    cpi = pd.Series(100 * 1.002 ** np.arange(15), index=idx)
+    cpi.iloc[13] = np.nan                                     # a month never published
+    gs10 = pd.Series(4.0, index=idx)
+    rr = trailing_real_rate(gs10, cpi)
+    infl = (1.002 ** 12 - 1) * 100
+    assert rr.iloc[-1] == pytest.approx(4.0 - infl, abs=1e-6)
+    assert rr.index[-2] == idx[13]                            # the gap month gets a value instead of breaking the 12-month change
+
+
+def test_exceed_prob_matches_the_normal_case():
+    from scipy import stats
+    from gold_desk.model import exceed_prob
+    f = Fit(mu=0, omega=0.01 ** 2, alpha=0.0, beta=0.0, nu=200, var_next=0.01 ** 2, n_obs=1000)   # flat 1% sigma, near-normal
+    p = exceed_prob(f, 0.02, days=5, n_paths=40_000)
+    assert p == pytest.approx(2 * stats.norm.sf(2), abs=0.004)
+    assert exceed_prob(f, 0.04, days=5, n_paths=40_000) < 0.001
+
+
+def test_exceed_odds_reports_share_of_days_and_at_least_once():
+    from gold_desk.model import exceed_odds
+    f = Fit(mu=0, omega=0.01 ** 2, alpha=0.0, beta=0.0, nu=200, var_next=0.01 ** 2, n_obs=1000)
+    o = exceed_odds(f, 0.02, days=9, n_paths=40_000)
+    assert o["at_least_once"] == pytest.approx(1 - (1 - o["share_of_days"]) ** 9, abs=0.01)
+
+
+def test_filter_variance_moves_with_shocks_and_keeps_parameters():
+    from gold_desk.model import filter_variance
+    f = Fit(mu=0.0, omega=1e-6, alpha=0.1, beta=0.85, nu=5, var_next=1e-4, n_obs=1000)
+    g = filter_variance(f, [0.05])
+    assert g.var_next == pytest.approx(1e-6 + 0.1 * 0.05 ** 2 + 0.85 * 1e-4)
+    assert (g.omega, g.alpha, g.beta, g.nu) == (f.omega, f.alpha, f.beta, f.nu)
+    assert filter_variance(f, []).var_next == f.var_next
+
+
+def test_score_rolls_none_and_empty_are_identical_and_adjust_only_crossing_pairs():
+    gold = _gold(n=400)
+    recs = [{"origin": f"{d:%Y-%m-%d}", "spot": float(gold[d]), "source": "backfill",
+             "grid": {str(h): list(gold[d] * np.linspace(0.9, 1.1, len(GRID_Q))) for h in HORIZONS}} for d in gold.index[300:380:5]]
+    a, b = score(recs, gold), score(recs, gold, [])
+    pd.testing.assert_frame_equal(a, b)
+    roll = [{"date": str(gold.index[350].date()), "ratio": 0.99}]
+    c = score(recs, gold, roll)
+    crossing = c["roll_adjusted"]
+    assert crossing.any() and (~crossing).any()
+    assert np.allclose(c.loc[crossing, "realised"], a.loc[crossing, "realised"] * 0.99)
+    assert np.allclose(c.loc[~crossing, "realised"], a.loc[~crossing, "realised"])
+    for _, r in c[crossing].iterrows():          # every adjusted pair has a roll between origin and outcome
+        assert r["origin"] < pd.Timestamp(roll[0]["date"])
+
+
+def test_unverified_rolls_are_skipped_unless_asked(tmp_path):
+    import json
+    from gold_desk.rolls import load_rolls
+    f = tmp_path / "r.json"
+    f.write_text(json.dumps([{"date": "2026-11-26", "ratio": 0.99, "verified": False}, {"date": "2026-09-28", "ratio": 0.995}]))
+    assert [r["date"] for r in load_rolls(f)] == ["2026-09-28"]
+    assert len(load_rolls(f, include_unverified=True)) == 2
+
+
+def test_published_test_outcomes_are_unchanged():
+    """H1-H6 outcomes as committed (21 and 23 Nov 2026); the Nova revision must not change them."""
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1] / "reports"
+    drv = json.loads((root / "2026-11-20-weekly" / "drivers.json").read_text(encoding="utf-8"))
+    spr = json.loads((root / "2026-11-20" / "spring.json").read_text(encoding="utf-8"))
+    assert drv["h1"]["confirmed"] and drv["h2"]["confirmed"]
+    assert not any(r.get("passed", False) for r in drv["h3"])
+    assert not any(r["passed"] for r in spr["h4"]) and not any(r["passed"] for r in spr["h5"])
+    assert not any(spr["h6_passed"].values())
+    assert spr["h5"][0]["p_one_sided"] == pytest.approx(0.0357, abs=5e-4)
+
+
+def test_nova_dash_rule_flags_dashes_but_not_ranges_or_empty_cells():
+    from gold_desk.nova_style import find_dashes
+    assert find_dashes(["What you need to know – a week", "an em—dash"]) == ["What you need to know – a week", "an em—dash"]
+    assert find_dashes(["$3,298–3,751", "–", "1974-12", "plain text"]) == []
+
+
+@pytest.mark.skipif(not __import__("gold_desk.nova_style", fromlist=["x"]).fonts_available(), reason="Segoe UI absent")
+def test_nova_deck_embeds_fonts_and_counts_blue_blocks(tmp_path):
+    from gold_desk.nova_style import Deck, fonts_embedded
+    d = Deck(tmp_path / "t.pdf", "t", "Nova Gold Weekly | test", "footer")
+    d.new_page("Title", "Source")
+    d.blue_block(36, 400, 300, 100, "KEY", ["one point"])
+    d.table([["A", "B"], ["x", "1"]], 36, 250, [100, 100])
+    d.save()
+    ok, detail = fonts_embedded(tmp_path / "t.pdf")
+    assert ok, detail
+    assert d.blue_blocks == 1 and "one point" in d.texts

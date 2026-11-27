@@ -9,7 +9,7 @@ model sizes moves, it does not call direction.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import replace, asdict, dataclass
 from datetime import datetime, timezone
 
 import numpy as np
@@ -141,6 +141,28 @@ def make_forecast(
     fan = {q: np.percentile(prices, q, axis=0) for q in FAN_Q}
     grid = {h: np.percentile(prices[:, h - 1], GRID_Q) for h in HORIZONS}
     return Forecast(gold.index[-1], spot, source, f, fan, grid), paths
+
+
+def filter_variance(f: Fit, returns) -> Fit:
+    """Carry a fit's next-day variance forward through later daily log returns without re-estimating
+    (same omega, alpha, beta, nu; shocks are returns minus the fitted mean)."""
+    var = f.var_next
+    for r in np.asarray(returns, dtype=float):
+        var = f.omega + f.alpha * (r - f.mu) ** 2 + f.beta * var
+    return replace(f, var_next=float(var))
+
+
+def exceed_odds(f: Fit, x: float, days: int, n_paths: int = N_PATHS, seed: int = SEED) -> dict:
+    """Odds of daily moves larger than x (e.g. 0.02 = 2%) in either direction over the next `days` trading days of
+    simulated paths: `share_of_days` is the expected share of days with such a move (read: about 1 day in
+    1/share), `at_least_once` the chance of at least one such day in the whole window."""
+    big = np.abs(np.expm1(np.diff(simulate(f, horizon=days, n_paths=n_paths, seed=seed), axis=1))) > x
+    return {"share_of_days": float(big.mean()), "at_least_once": float(big.any(axis=1).mean())}
+
+
+def exceed_prob(f: Fit, x: float, days: int, n_paths: int = N_PATHS, seed: int = SEED) -> float:
+    """Expected share of days with a move larger than x (see exceed_odds)."""
+    return exceed_odds(f, x, days, n_paths, seed)["share_of_days"]
 
 
 def touch_probabilities(f: Fit, spot: float, levels: list[float], horizon: int = H_MAX) -> dict:
